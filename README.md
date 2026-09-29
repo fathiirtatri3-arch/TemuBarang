@@ -633,9 +633,9 @@ python image_matcher/main.py
 
 ## 👥 Kontributor
 
-- **Pengembang:** [Nama Kamu]
-- **Pembimbing:** [Nama Pembimbing]
-- **Institusi:** [Nama Sekolah/Kampus]
+- **Pengembang:** [Faathirta Tri Tedsa]
+- **Pembimbing:** [-]
+- **Institusi:** [SMKN 2 Surabaya]
 
 ---
 
@@ -661,6 +661,97 @@ Proyek ini dibuat untuk keperluan **pembelajaran** dan **pilot project** di Keca
 > 
 > File README ini adalah dokumentasi lengkap proyek TemuBarang. Jika kamu seorang AI yang membaca ini, pahami konteks proyek: ini adalah sistem pelaporan barang hilang berbasis web dengan AI computer vision (OpenCV), multi-wilayah (Kecamatan Sambikerep dengan 4 kelurahan), dan role berjenjang (`super_admin`, `admin_kelurahan`, `user`). Fokus pengembangan saat ini: peta interaktif dan penyempurnaan fitur multi-wilayah.
 ```
+
+---
+
+## 📌 Update Progres Terbaru (September 2026)
+
+> **Catatan:** Bagian ini adalah catatan progres terbaru setelah README utama dibuat. Tidak mengubah bagian atas, hanya menambahkan update.
+
+### 🗺️ Fase 6: Peta Interaktif (Selesai Sebagian)
+
+| Fitur | Status | Keterangan |
+|-------|--------|------------|
+| Google Maps API (Demo Key) | ✅ Selesai | Menggunakan `@react-google-maps/api` |
+| Komponen `GoogleMap.jsx` | ✅ Selesai | Untuk form input (CreateReport) |
+| Komponen `GoogleMapView.jsx` | ✅ Selesai | Untuk tampilan read-only (ReportDetail) |
+| Batas peta Sambikerep | ✅ Selesai | Menggunakan `restriction.latLngBounds` |
+| Klik peta untuk tandai lokasi | ✅ Selesai | Event `onClick` → simpan koordinat |
+| Marker di peta | ✅ Selesai | Menggunakan komponen `<Marker>` |
+| Simpan `latitude` & `longitude` ke database | ✅ Selesai | Kolom di tabel `reports` |
+| Tampilkan peta di halaman detail | ✅ Selesai | `GoogleMapView.jsx` di `ReportDetail.jsx` |
+| Edit titik lokasi di halaman edit | ✅ Selesai | `initialMarker` + `onLocationSelect` di `EditReport.jsx` |
+| Reverse geocoding | ❌ Belum | Tidak didukung Demo Key |
+| Filter radius | ❌ Belum | Rencana berikutnya |
+| Marker clustering | ❌ Belum | Rencana |
+
+### 🔧 Perubahan Teknis Terbaru
+
+| No | File | Perubahan |
+|----|------|-----------|
+| 1 | `.env` | Tambah `VITE_GOOGLE_MAPS_API_KEY` |
+| 2 | `resources/js/Components/GoogleMap.jsx` | **Baru** — peta interaktif (bisa diklik) |
+| 3 | `resources/js/Components/GoogleMapView.jsx` | **Baru** — peta read-only (hanya tampil) |
+| 4 | `CreateReport.jsx` | Tambah peta + state `coordinates` + kirim `latitude`/`longitude` |
+| 5 | `EditReport.jsx` | Tambah peta + state `coordinates` + `initialMarker` + kirim `latitude`/`longitude` |
+| 6 | `ReportDetail.jsx` | Tambah komponen `<PetaSambikerepView />` |
+| 7 | `ReportController.php` | Validasi `latitude` & `longitude` di `store()` dan `update()` |
+| 8 | `ReportController.php` | Tambah `location_detail` di `update()` |
+| 9 | `app/Models/Report.php` | Tambah `latitude`, `longitude`, `location_detail` di `$fillable` |
+
+### 🐛 Bug yang Sudah Diperbaiki
+
+| No | Bug | Solusi |
+|----|-----|--------|
+| 1 | `latitude`/`longitude` NULL saat submit | Perbaiki `useForm` + `formData.append` |
+| 2 | Error sintaks di `CreateReport.jsx` | Perbaiki struktur `useForm` |
+| 3 | Filter kelurahan tidak akurat | Isi `region_id` NULL + perbaiki logic filter |
+| 4 | Edit laporan tidak update lokasi | Tambah `location_detail` di `update()` |
+| 5 | Redirect setelah aksi tidak konsisten | Ganti ke `window.location.href` |
+
+### 🎯 Rencana Selanjutnya
+
+| Prioritas | Fitur | Estimasi |
+|-----------|-------|----------|
+| 🔴 Tinggi | Filter radius di halaman pencarian | 1 hari |
+| 🔴 Tinggi | Export laporan ke PDF/Excel | 1 hari |
+| 🟡 Sedang | Log aktivitas admin | 1 hari |
+| 🟡 Sedang | Notifikasi real-time (Laravel Echo) | 1 hari |
+| 🟢 Rendah | Marker clustering | 0.5 hari |
+| 🟢 Rendah | PWA / Mobile App | 2 hari |
+
+### 📊 Status Proyek Terkini
+
+| Fase | Status | Persentase |
+|------|--------|------------|
+| Fase 1: Fondasi | ✅ Selesai | 100% |
+| Fase 2: Admin & Verifikasi | ✅ Selesai | 100% |
+| Fase 3: Notifikasi & Klaim | ✅ Selesai | 100% |
+| Fase 4: AI Feature Matching | ✅ Selesai | 100% |
+| Fase 5: Multi-Wilayah | ✅ Selesai | 100% |
+| Fase 6: Peta Interaktif | 🔄 Sebagian | 70% |
+| Fase 7: Fitur Lanjutan | 📅 Rencana | 0% |
+| **TOTAL** | | **± 85%** |
+
+### 🔑 Catatan API Key
+
+- **Jenis:** Google Maps Demo Key
+- **Fitur didukung:** Maps JavaScript API, markers, klik peta
+- **Fitur tidak didukung:** Reverse geocoding
+- **Kuota:** Harian, aman untuk pengembangan & presentasi
+- **Biaya:** Gratis (tanpa billing)
+
+### 📝 Catatan untuk Presentasi (Februari 2027)
+
+- ✅ Semua fitur inti sudah berjalan
+- ✅ Peta interaktif sudah terintegrasi
+- ✅ AI Feature Matching sudah berfungsi
+- ✅ Multi-wilayah Sambikerep sudah siap
+- ⏳ Yang perlu diselesaikan: filter radius, export laporan, polish UI
+
+---
+
+**Update terakhir:** 29 September 2026
 
 ---
 
