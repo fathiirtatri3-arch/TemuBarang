@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Link, usePage, useForm, router } from '@inertiajs/react';
 import { useState } from 'react';
+import PetaSambikerepView from '@/Components/GoogleMapView';
 
 export default function ReportDetail() {
     const { report } = usePage().props;
@@ -225,6 +226,22 @@ export default function ReportDetail() {
                                     )}
 
                                     <hr className="border-gray-200 border" />
+
+                                    {/* ⭐ PETA LOKASI - TAMBAHKAN DI SINI ⭐ */}
+                                    <div className="mt-2">
+                                        <p className="text-xs text-gray-400 mb-2 flex items-center gap-1.5">
+                                            <svg className="w-3.5 h-3.5 text-[#185FA5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                            Lokasi di Peta
+                                        </p>
+                                        <PetaSambikerepView
+                                            latitude={report.latitude}
+                                            longitude={report.longitude}
+                                            itemName={report.item_name}
+                                        />
+                                    </div>
 
                                     {/* Info grid */}
                                     <div className="grid grid-cols-2 gap-4">

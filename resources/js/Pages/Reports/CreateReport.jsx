@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm, Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PetaSambikerep from '@/Components/GoogleMap';
 
 export default function CreateReport() {
     const [photoPreview, setPhotoPreview] = useState(null);
@@ -12,6 +13,7 @@ export default function CreateReport() {
     const [hasPhoto, setHasPhoto] = useState(false);
     const [regions, setRegions] = useState([]);
     const [regionsLoading, setRegionsLoading] = useState(true);
+    const [coordinates, setCoordinates] = useState(null);
     
     const { data, setData, post, processing, errors, reset } = useForm({
         type: 'lost',
@@ -22,14 +24,16 @@ export default function CreateReport() {
         location: '',
         date: '',
         photo: null,
-        region_id: ''
+        region_id: '',
+        latitude: '',
+        longitude: '',
     });
     
     // Real-time validation
     useEffect(() => {
         const newErrors = {};
-        if (data.item_name && data.item_name.length < 3) {
-            newErrors.item_name = 'Nama barang minimal 3 karakter';
+        if (data.item_name && data.item_name.length < 5) {
+            newErrors.item_name = 'Nama barang minimal 5 karakter';
         }
         if (data.location && data.location.length < 3) {
             newErrors.location = 'Lokasi minimal 3 karakter';
@@ -144,6 +148,11 @@ export default function CreateReport() {
             return;
         }
 
+        if (!data.latitude || !data.longitude) {
+            showToast('Tandai lokasi di peta terlebih dahulu!', 'error');
+            return;
+        }
+
         if (Object.keys(liveErrors).length > 0) {
             showToast('Harap perbaiki error yang ada', 'error');
             return;
@@ -154,45 +163,25 @@ export default function CreateReport() {
     
     const confirmSubmit = () => {
         setShowConfirmModal(false);
-        
-        console.log('Confirm submit, data:', data);
-        
-        // Pastikan photo ada di FormData
-        const formData = new FormData();
-        formData.append('type', data.type);
-        formData.append('item_name', data.item_name);
-        formData.append('category', data.category);
-        formData.append('description', data.description);
-        formData.append('color', data.color);
-        formData.append('location', data.location);
-        formData.append('date', data.date);
-        formData.append('region_id', data.region_id);
-        if (data.photo) {
-            formData.append('photo', data.photo);
-        }
-        
+
         post('/reports', {
-            data: formData,
+            forceFormData: true,
             onSuccess: () => {
                 showToast('Laporan berhasil dikirim!', 'success');
                 reset();
                 setPhotoPreview(null);
                 setHasPhoto(false);
+                setCoordinates(null);
                 setTimeout(() => {
                     router.visit('/reports');
                 }, 1500);
             },
             onError: (errors) => {
                 console.error('Submit errors:', errors);
-                if (errors.error) {
-                    showToast(errors.error, 'error');
-                } else if (errors.item_name) {
-                    showToast(errors.item_name, 'error');
-                } else if (errors.photo) {
-                    showToast(errors.photo, 'error');
-                } else {
-                    showToast('Gagal mengirim laporan. Cek kembali data Anda.', 'error');
-                }
+                showToast(
+                    errors.error || errors.item_name || errors.description || errors.photo || errors.latitude || 'Gagal mengirim laporan. Cek kembali data Anda.',
+                    'error'
+                );
             },
         });
     };
@@ -425,6 +414,22 @@ export default function CreateReport() {
                                             <p className="mt-1 text-xs text-green-600">✓ Lokasi valid</p>
                                         )}
                                         {errors.location && <p className="mt-1 text-xs text-red-500">{errors.location}</p>}
+                                    </div>
+
+                                    {/* ⭐ PETA INTERAKTIF - TAMBAHKAN DI SINI ⭐ */}
+                                    <div className="col-span-2">
+                                        <label className="block font-semibold text-sm mb-2.5 text-gray-800 px-1">
+                                            Tandai Lokasi di Peta <span className="text-red-500">*</span>
+                                        </label>
+                                        <PetaSambikerep 
+                                            onLocationSelect={(coords) => {
+                                                setCoordinates(coords);
+                                                setData(prev => ({ ...prev, latitude: coords.lat, longitude: coords.lng }));
+                                            }}
+                                        />
+                                        <p className="text-xs text-gray-500 mt-2">
+                                            Klik pada peta untuk menandai lokasi barang.
+                                        </p>
                                     </div>
 
                                     {/* Tanggal */}

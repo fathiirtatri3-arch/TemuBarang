@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useForm, usePage, Link, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
+import PetaSambikerep from '@/Components/GoogleMap'; 
 
 export default function EditReport() {
     const { report } = usePage().props;
@@ -12,6 +13,7 @@ export default function EditReport() {
     const [liveErrors, setLiveErrors] = useState({});
     const [regions, setRegions] = useState([]);
     const [regionsLoading, setRegionsLoading] = useState(true)
+    const [coordinates, setCoordinates] = useState(null);
     
     const { data, setData, put, processing, errors } = useForm({
         item_name: report.item_name,
@@ -21,6 +23,8 @@ export default function EditReport() {
         location: report.location,
         date: report.date ? report.date.split('T')[0] : '',
         region_id: report.region_id || '',
+        latitude: report.latitude || '',
+        longitude: report.longitude || '',
         photo: null,
         _method: 'PUT',
     });
@@ -135,6 +139,8 @@ export default function EditReport() {
         formData.append('location', data.location);
         formData.append('date', data.date);
         formData.append('region_id', data.region_id);
+        formData.append('latitude', data.latitude);
+        formData.append('longitude', data.longitude);
         if (data.photo) {
             formData.append('photo', data.photo);
         }
@@ -358,6 +364,28 @@ export default function EditReport() {
                                     <p className="text-green-500 text-xs mt-1">✓ Lokasi valid</p>
                                 )}
                                 {errors.location && <p className="text-red-500 text-xs mt-1">{errors.location}</p>}
+                            </div>
+
+                            {/* ⭐ PETA EDIT LOKASI - TAMBAHKAN DI SINI ⭐ */}
+                            <div className="col-span-2">
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                    Tandai Lokasi di Peta <span className="text-red-500">*</span>
+                                </label>
+                                <PetaSambikerep
+                                    initialMarker={
+                                        report.latitude && report.longitude
+                                            ? { lat: parseFloat(report.latitude), lng: parseFloat(report.longitude) }
+                                            : null
+                                    }
+                                    onLocationSelect={(coords) => {
+                                        setCoordinates(coords);
+                                        setData('latitude', coords.lat);
+                                        setData('longitude', coords.lng);
+                                    }}
+                                />
+                                <p className="text-xs text-gray-500 mt-2">
+                                    Klik pada peta untuk memindahkan titik lokasi barang.
+                                </p>
                             </div>
                             
                             <div>

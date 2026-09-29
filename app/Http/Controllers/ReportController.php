@@ -34,6 +34,8 @@ class ReportController extends Controller
             'date' => 'required|date',
             'photo' => 'required|image|max:2048',
             'region_id' => 'required|exists:regions,id',
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
         ]);
 
         \Log::info('=== CEK KATA KASAR ===');
@@ -46,7 +48,7 @@ class ReportController extends Controller
             return back()->withErrors(['item_name' => 'Nama barang mengandung kata yang tidak diperbolehkan.']);
         }
 
-        if (BadWords::contains($request->description)) {
+        if (BadWords::contains($request->description ?? '')) {
             return back()->withErrors(['description' => 'Deskripsi mengandung kata yang tidak diperbolehkan.']);
         }
         
@@ -59,9 +61,6 @@ class ReportController extends Controller
         // Tambahkan user_id dan status
         $validated['user_id'] = auth()->id();
         $validated['status'] = 'pending';
-        $validated['region_id'] = $request->region_id;
-        $validated['latitude'] = $request->latitude;
-        $validated['longitude'] = $request->longitude;
         $validated['location_detail'] = $request->location;
         
         // Simpan ke database
@@ -100,6 +99,8 @@ class ReportController extends Controller
             'date'      => 'required|date',
             'photo'     => 'nullable|image|max:2048',
             'region_id' => 'required|exists:regions,id',
+            'latitude'  => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
         ]);
 
         // ✅ CEK KATA KASAR — harus SEBELUM update
@@ -107,7 +108,7 @@ class ReportController extends Controller
             return back()->withErrors(['item_name' => 'Nama barang mengandung kata yang tidak diperbolehkan.']);
         }
 
-        if (BadWords::contains($request->description)) {
+        if (BadWords::contains($request->description ?? '')) {
             return back()->withErrors(['description' => 'Deskripsi mengandung kata yang tidak diperbolehkan.']);
         }
 
@@ -118,6 +119,8 @@ class ReportController extends Controller
             $validated['photo'] = $request->file('photo')->store('reports', 'public');
         }
 
+        $validated['location_detail'] = $request->location;
+        
         $report->update($validated);
 
         return redirect()->route('reports.show', $report->id)
