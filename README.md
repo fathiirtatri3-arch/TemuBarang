@@ -755,6 +755,198 @@ Proyek ini dibuat untuk keperluan **pembelajaran** dan **pilot project** di Keca
 
 ---
 
+---
+
+## 🔄 Changelog: Refactor Skala Sekolah → Kecamatan Sambikerep
+
+> **Tanggal:** September 2026  
+> **Tujuan:** Mengubah skala proyek dari **sekolah (SMKN 2 Surabaya)** menjadi **Kecamatan Sambikerep, Surabaya**  
+> **Alasan:** Proyek diperluas untuk mencakup seluruh warga kecamatan, bukan hanya siswa sekolah
+
+---
+
+### 📋 Ringkasan Perubahan
+
+| Aspek | Sebelum | Sesudah |
+|-------|---------|---------|
+| **Skala** | SMKN 2 Surabaya (sekolah) | Kecamatan Sambikerep (kecamatan) |
+| **Pengguna** | Siswa & guru | Warga kecamatan |
+| **Cakupan** | 1 sekolah | 4 kelurahan (Made, Bringin, Lontar, Sambikerep) |
+| **Identitas** | "Sistem Resmi SMKN 2 Surabaya" | "Sistem Resmi Kecamatan Sambikerep" |
+| **Logo** | Logo SMKN 2 | Logo TemuBarang (baru) |
+
+---
+
+### 1️⃣ Halaman Welcome (`Welcome.jsx`)
+
+**File:** `resources/js/Pages/Welcome.jsx`
+
+Halaman Welcome adalah halaman pertama yang direfactor karena merupakan **wajah utama** aplikasi.
+
+#### a. Navbar & Identitas
+
+| Elemen | Sebelum | Sesudah |
+|--------|---------|---------|
+| **Tab Title** | `TemuBarang - SMKN 2 Surabaya Lost & Found` | `TemuBarang - Sistem Barang Hilang Kecamatan Sambikerep` |
+| **Logo** | Logo SMKN 2 (URL Google) | Logo TemuBarang lokal (`/images/logo_temubarang.png`) |
+| **Favicon** | Logo Laravel (default) | Logo TemuBarang |
+| **Subtitle** | "Sistem Barang Hilang" | "Kecamatan Sambikerep" |
+
+#### b. Hero Section
+
+| Elemen | Sebelum | Sesudah |
+|--------|---------|---------|
+| **Badge** | "Sistem Resmi SMKN 2 Surabaya" | "Sistem Resmi Kecamatan Sambikerep" |
+| **Judul** | "...di SMKN 2 Surabaya" | "...di Kecamatan Sambikerep" |
+| **Subjudul** | "...warga SMKN 2 Surabaya" | "...warga Kecamatan Sambikerep, Surabaya" |
+| **Ilustrasi** | Foto siswa sekolah | Ilustrasi warga + peta + laptop |
+
+#### c. Stats Section
+
+| Elemen | Sebelum | Sesudah |
+|--------|---------|---------|
+| **Label 2** | "Siswa Terbantu" | "Warga Terbantu" |
+| **Nilai 3** | "SMK" | "4" |
+| **Label 3** | "PK Unggulan" | "Kelurahan Terlayani" |
+
+#### d. Section "Mengapa Memilih TemuBarang?"
+
+| Elemen | Sebelum | Sesudah |
+|--------|---------|---------|
+| **Subjudul** | "...pencarian barang hilang **di sekolah**" | "...pencarian barang hilang **di lingkungan kecamatan**" |
+
+#### e. Section Keunggulan (4 Fitur)
+
+| Fitur | Perubahan |
+|-------|-----------|
+| **Pencocokan Cerdas** | Deskripsi tetap, gambar diganti dengan foto Pexels |
+| **Notifikasi Real-time** | Tambah konteks "di wilayah kecamatan", gambar diganti |
+| **Keamanan Terjamin** | Deskripsi tetap, gambar diganti |
+| **✨ Titik Lokasi (BARU)** | Fitur baru: peta interaktif dengan titik koordinat |
+
+**Layout:** Format selang-seling (foto kiri → foto kanan) menggunakan `ScrollStack`.
+
+#### f. Section Kelurahan (Sebelumnya "Tim Admin")
+
+| Elemen | Sebelum | Sesudah |
+|--------|---------|---------|
+| **Judul** | "Tim Admin Kami" | "Kelurahan di Kecamatan Sambikerep" |
+| **Subjudul** | "Guru BK SMKN 2 Surabaya..." | "Melayani 4 kelurahan..." |
+| **Orbit Images** | 5 foto guru BK | 4 foto kantor kelurahan |
+| **Center Orbit** | Text "BK SMKN 2" | **Logo Kota Surabaya** |
+| **Bentuk Orbit** | Oval pipih (`ellipse`) | Oval pipih (`ellipse`) dengan foto lingkaran sempurna |
+| **Quote** | "Kami siap membantu..." | "Bersama warga, kita wujudkan..." |
+
+#### g. CTA Section
+
+| Elemen | Sebelum | Sesudah |
+|--------|---------|---------|
+| **Subjudul** | "...ratusan **siswa SMKN 2 Surabaya**..." | "...ratusan **warga Kecamatan Sambikerep**..." |
+
+#### h. Footer
+
+| Elemen | Sebelum | Sesudah |
+|--------|---------|---------|
+| **Logo** | Logo SMKN 2 | Logo TemuBarang |
+| **Copyright** | "© 2024 TemuBarang SMKN 2 Surabaya" | "© 2024 TemuBarang Kecamatan Sambikerep" |
+
+---
+
+### 2️⃣ Komponen yang Diperbarui
+
+#### a. `OrbitImages.jsx`
+
+**File:** `resources/js/Components/OrbitImages.jsx`
+
+| Perubahan | Detail |
+|-----------|--------|
+| **`OrbitItem`** | Tambah `borderRadius: '9999px'` + `overflow: 'hidden'` agar foto jadi lingkaran sempurna |
+| **`items.map`** | Ganti `object-contain` → `object-cover` agar foto tidak gepeng |
+| **Shape** | Support `ellipse`, `circle`, `infinity`, `wave`, dll |
+
+#### b. `TextType.jsx`
+
+**File:** `resources/js/Components/TextType.jsx`
+
+Efek mengetik untuk judul Hero Section, berjalan urut (bukan acak).
+
+#### c. `GuestLayout.jsx`
+
+**File:** `resources/js/Layouts/GuestLayout.jsx`
+
+| Perubahan | Detail |
+|-----------|--------|
+| **Logo** | Ganti icon SVG → logo TemuBarang (`/images/logo_temubarang.png`) |
+| **Import** | Hapus `ApplicationLogo` (tidak dipakai) |
+
+#### d. `AuthenticatedLayout.jsx`
+
+**File:** `resources/js/Layouts/AuthenticatedLayout.jsx`
+
+| Perubahan | Detail |
+|-----------|--------|
+| **Logo Sidebar** | Ganti icon SVG → logo TemuBarang |
+| **Subtitle** | "Sistem Barang Hilang" → "Kecamatan Sambikerep" |
+| **Role User** | `super_admin`, `admin_kelurahan`, `user` |
+| **Menu Admin** | Tambah "Kelola User" (khusus super_admin) |
+
+---
+
+### 3️⃣ File & Folder Baru
+
+#### Gambar/Foto
+public/images/
+├── kelurahan/
+│   ├── bringin.png
+│   ├── lontar.png
+│   ├── made.png
+│   └── sambikerep.png
+├── keamanan-terjamin.png
+├── logo_temubarang_bg.png
+├── logo-surabaya.png
+├── notifikasi-realtime.png
+├── pencocokan-cerdas.png
+├── revisi-utama.jpeg
+└── titik-lokasi.jpg
+
+
+#### Komponen React Bits
+resources/js/Components/
+├── TextType.jsx ← Efek mengetik
+├── AnimatedContent.jsx ← Animasi scroll
+├── OrbitImages.jsx ← Gambar berputar
+├── ScrollStack.jsx ← Stack scroll
+├── TrueFocus.jsx ← Focus animasi
+└── CardNav.jsx ← Navbar card
+
+
+---
+
+### 4️⃣ Fitur Baru yang Ditambahkan
+
+| Fitur | Status | Keterangan |
+|-------|--------|------------|
+| **Titik Lokasi** | ✅ | Peta interaktif dengan titik koordinat di section Keunggulan |
+| **Google Maps API** | ✅ | Terintegrasi dengan Demo Key |
+| **Multi-Wilayah** | ✅ | 4 kelurahan dengan role berjenjang |
+| **Logo Surabaya** | ✅ | Center orbit kelurahan |
+| **Peta Interaktif** | ✅ | Di `CreateReport`, `EditReport`, `ReportDetail` |
+
+---
+
+### 5️⃣ Dependencies yang Ditambahkan
+
+```json
+{
+  "gsap": "^3.x",
+  "framer-motion": "^11.x",
+  "motion": "^11.x",
+  "lenis": "^1.x"
+}
+
+install
+npm install gsap framer-motion motion lenis
+
 ## 📋 Cara Menggunakan File Ini
 
 1. **Buka VS Code** di root proyek `temubarang`
