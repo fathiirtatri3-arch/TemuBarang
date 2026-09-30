@@ -147,19 +147,19 @@ export default function AuthenticatedLayout({ children }) {
                 <div style={{ padding: '1.4rem 1.25rem', borderBottom: '1px solid #EDF1F7', marginBottom: '0.5rem' }}>
                     <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 11, textDecoration: 'none' }}>
                         <div style={{
-                            width: 34, height: 34, borderRadius: 10,
-                            background: 'linear-gradient(135deg, #185FA5, #0F4C85)',
+                            width: 40, height: 40,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             flexShrink: 0,
-                            boxShadow: '0 2px 6px rgba(24,95,165,0.25)',
                         }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                            </svg>
+                            <img
+                                src="/images/logo_temubarang_bg.png"
+                                alt="Logo TemuBarang"
+                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                            />
                         </div>
                         <div>
                             <div style={{ fontSize: 14.5, fontWeight: 800, color: '#0F172A', lineHeight: 1.2, letterSpacing: '-0.01em' }}>TemuBarang</div>
-                            <div style={{ fontSize: 10, color: '#94A3B8', lineHeight: 1.4, fontWeight: 500 }}>Sistem Barang Hilang</div>
+                            <div style={{ fontSize: 10, color: '#94A3B8', lineHeight: 1.4, fontWeight: 500 }}>Kecamatan Sambikerep</div>
                         </div>
                     </Link>
                 </div>

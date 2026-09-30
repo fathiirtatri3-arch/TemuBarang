@@ -61,7 +61,7 @@ export default function Welcome({ auth }) {
 
     return (
         <>
-            <Head title="TemuBarang - SMKN 2 Surabaya Lost & Found" />
+            <Head title="TemuBarang - Sistem Barang Hilang Kecamatan Sambikerep" />
 
             {/* Google Fonts */}
             <style>{`
@@ -92,8 +92,8 @@ export default function Welcome({ auth }) {
                         {/* Logo */}
                         <div className="flex items-center gap-4">
                             <img
-                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOOBWhTLbCDtXnVNMxHVjEvaEZlWzMfUJwI58LKedypOJ7uEgvteuG0e6Trnca0kSTrsf6eONHy553q7G8hocUGoCCz-Nbf6OkIHlVWO5gbH35g4hSwWkzrOBJUcR7YB7t8UhZZGHVSh-BlfMWpGtlMrAHz16PqOBN6VcxLfGFAngl3UNxrW56YTZC11oBExGyxpPASy02CCaZ02pGzJHTqGjI0NsCLHl1OVkqMA4hsyI02NWsk3Nq0znend3IHwlw13TUT0T16FE"
-                                alt="SMKN 2 Surabaya Logo"
+                                src="/images/logo_temubarang_bg.png"
+                                alt="Logo TemuBarang Kecamatan Sambikerep"
                                 className="h-12 w-auto object-contain"
                             />
                             <div className="h-8 w-px bg-[#c2c6d2] mx-2 hidden sm:block"></div>
@@ -162,13 +162,13 @@ export default function Welcome({ auth }) {
                             <div className="flex flex-col gap-6">
                                 <div className="inline-flex items-center gap-2 bg-white/10 text-white border border-white/20 px-4 py-1 rounded-full w-fit">
                                     <span className="material-symbols-outlined text-[18px]">verified_user</span>
-                                    <span className="text-xs font-medium">Sistem Resmi SMKN 2 Surabaya</span>
+                                    <span className="text-xs font-medium">Sistem Resmi Kecamatan Sambikerep</span>
                                 </div>
 
                                 <h1 className="text-4xl md:text-5xl font-extrabold text-white leading-tight">
                                         <TextType
                                             text={[
-                                                'Temukan Kembali Barang Berhargamu di SMKN 2 Surabaya',
+                                                'Temukan Kembali Barang Berhargamu di Kecamatan Sambikerep',
                                                 'Laporkan Barang Hilang dengan Mudah dan Cepat',
                                                 'Kembalikan Barang Temuan ke Pemilik yang Sah'
                                             ]}
@@ -185,7 +185,7 @@ export default function Welcome({ auth }) {
                                 </h1>
 
                                 <p className="text-lg text-white/90 max-w-xl leading-relaxed">
-                                    Sistem informasi cerdas untuk melaporkan barang hilang dan temuan khusus untuk seluruh warga SMKN 2 Surabaya. Cepat, transparan, dan terpercaya.
+                                    Sistem informasi cerdas untuk melaporkan barang hilang dan temuan khusus untuk seluruh warga Kecamatan Sambikerep, Surabaya. Cepat, transparan, dan terpercaya.
                                 </p>
 
                                 <div className="flex flex-col sm:flex-row gap-4 pt-2">
@@ -210,7 +210,7 @@ export default function Welcome({ auth }) {
                             <div className="relative group">
                                 <div className="absolute -inset-4 bg-white/10 rounded-full blur-3xl opacity-30"></div>
                                 <img
-                                    src="/images/utama.png"
+                                    src="/images/revisi-utama.jpeg"
                                     alt="TemuBarang Illustration"
                                     className="relative w-full h-auto drop-shadow-2xl rounded-2xl transform transition-transform duration-500 group-hover:scale-[1.01]"
                                 />
@@ -240,11 +240,11 @@ export default function Welcome({ auth }) {
                                 </div>
                                 <div className="flex flex-col items-center text-center">
                                     <span className="text-5xl font-extrabold text-[#004782]">500+</span>
-                                    <span className="text-xs font-semibold text-[#424751] uppercase tracking-wider mt-1">Siswa Terbantu</span>
+                                    <span className="text-xs font-semibold text-[#424751] uppercase tracking-wider mt-1">Warga Terbantu</span>
                                 </div>
                                 <div className="flex flex-col items-center text-center">
-                                    <span className="text-5xl font-extrabold text-[#004782]">SMK</span>
-                                    <span className="text-xs font-semibold text-[#424751] uppercase tracking-wider mt-1">PK Unggulan</span>
+                                    <span className="text-5xl font-extrabold text-[#004782]">4</span>
+                                    <span className="text-xs font-semibold text-[#424751] uppercase tracking-wider mt-1">Kelurahan Terlayani</span>
                                 </div>
                             </div>
                         </div>
@@ -258,7 +258,7 @@ export default function Welcome({ auth }) {
                                     Mengapa Memilih TemuBarang?
                                 </h2>
                                 <p className="text-base text-[#424751] max-w-2xl mx-auto mb-4">
-                                    Kami mengedepankan kemudahan dan keamanan dalam setiap proses pencarian barang hilang di sekolah.
+                                    Kami mengedepankan kemudahan dan keamanan dalam setiap proses pencarian barang hilang di lingkungan kecamatan.
                                 </p>
                             </div>
 
@@ -280,7 +280,7 @@ export default function Welcome({ auth }) {
                                         <div className="flex flex-col md:flex-row items-center gap-6 h-full justify-center p-6">
                                             <div className="w-full md:w-2/5 flex-shrink-0">
                                                 <img
-                                                    src="/images/utama.png"
+                                                    src="/images/pencocokan-cerdas.png"
                                                     alt="Pencocokan Cerdas"
                                                     className="w-full h-auto rounded-2xl shadow-md object-contain"
                                                 />
@@ -305,7 +305,7 @@ export default function Welcome({ auth }) {
                                             {/* Gambar - SEKARANG DI SEBELAH KANAN */}
                                             <div className="w-full md:w-2/5 flex-shrink-0">
                                                 <img
-                                                    src="/images/ketiga.png"
+                                                    src="/images/notifikasi-realtime.png"
                                                     alt="Notifikasi Real-time"
                                                     className="w-full h-auto rounded-2xl shadow-md object-contain"
                                                 />
@@ -319,7 +319,7 @@ export default function Welcome({ auth }) {
                                                     <h3 className="text-2xl font-bold text-[#6f3800]">Notifikasi Real-time</h3>
                                                 </div>
                                                 <p className="text-[#424751] text-base leading-relaxed">
-                                                    Dapatkan pemberitahuan langsung melalui WhatsApp atau Email saat ada barang yang sesuai dengan laporan kehilangan Anda ditemukan.
+                                                    Dapatkan pemberitahuan langsung melalui WhatsApp atau Email saat ada barang yang sesuai dengan laporan kehilangan Anda ditemukan di wiliayah kecamatan.
                                                 </p>
                                             </div>
                                         </div>
@@ -330,7 +330,7 @@ export default function Welcome({ auth }) {
                                         <div className="flex flex-col md:flex-row items-center gap-6 h-full justify-center p-6">
                                             <div className="w-full md:w-2/5 flex-shrink-0">
                                                 <img
-                                                    src="/images/kedua.png"
+                                                    src="/images/keamanan-terjamin.png"
                                                     alt="Keamanan Terjamin"
                                                     className="w-full h-auto rounded-2xl shadow-md object-contain"
                                                 />
@@ -348,10 +348,34 @@ export default function Welcome({ auth }) {
                                             </div>
                                         </div>
                                     </ScrollStackItem>
+
+                                    {/* ✨ Fitur 4: Titik Lokasi (BARU - Foto Kanan) */}
+                                    <ScrollStackItem itemClassName="bg-[#f2f3fa] border border-[#e7e8ee] hover:shadow-2xl transition-all">
+                                        <div className="flex flex-col md:flex-row-reverse items-center gap-6 h-full justify-center p-6">
+                                            <div className="w-full md:w-2/5 flex-shrink-0">
+                                                <img
+                                                    src="/images/titik-lokasi.jpg"
+                                                    alt="Titik Lokasi"
+                                                    className="w-full h-auto rounded-2xl shadow-md object-cover"
+                                                />
+                                            </div>
+                                            <div className="flex-1 text-left">
+                                                <div className="flex items-center gap-4 mb-4">
+                                                    <div className="w-14 h-14 bg-[#0268D4] rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                                                        <span className="material-symbols-outlined text-white text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>location_on</span>
+                                                    </div>
+                                                    <h3 className="text-2xl font-bold text-[#0268D4]">Titik Lokasi</h3>
+                                                </div>
+                                                <p className="text-[#424751] text-base leading-relaxed">
+                                                    Temukan lokasi kejadian secara presisi melalui peta interaktif. Setiap laporan dilengkapi dengan titik koordinat untuk memudahkan pencarian barang di wilayah kecamatan.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </ScrollStackItem>
                                 </ScrollStack>
                         </section>
 
-                    {/* ── Tim Admin / Guru BK Section ── */}
+                    {/* ── Titik Temu Kelurahan Section ── */}
                     <AnimatedContent
                         distance={60}
                         direction="vertical"
@@ -366,23 +390,22 @@ export default function Welcome({ auth }) {
                         <section id="team" className="py-16 bg-[#f2f3fa] overflow-hidden">
                             <div className="max-w-7xl mx-auto px-6 text-center">
                                 <h2 className="text-3xl font-bold text-[#191c20] mb-3">
-                                    Tim Admin Kami
+                                    Titik Temu Kelurahan
                                 </h2>
                                 <p className="text-base text-[#424751] max-w-2xl mx-auto mb-12">
-                                    Guru Bimbingan dan Konseling (BK) SMKN 2 Surabaya siap membantu proses verifikasi dan pengembalian barang.
+                                    Admin di 4 kantor kelurahan Kecamatan Sambikerep siap membantu proses verifikasi dan pengembalian barang.
                                 </p>
 
                                 {/* Orbit Images */}
                                 <div className="relative w-full flex justify-center items-center" style={{ height: '420px', marginBottom: '2rem' }}>
                                     <OrbitImages
                                         images={[
-                                            '/images/guru/guru1.jpeg',
-                                            '/images/guru/guru2.jpeg',
-                                            '/images/guru/guru3.jpeg',
-                                            '/images/guru/guru4.jpeg',
-                                            '/images/guru/guru5.jpeg',
+                                            { src: '/images/kelurahan/made.png', label: 'Kelurahan Made' },
+                                            { src: '/images/kelurahan/bringin.png', label: 'Kelurahan Bringin' },
+                                            { src: '/images/kelurahan/lontar.png', label: 'Kelurahan Lontar' },
+                                            { src: '/images/kelurahan/sambikerep.png', label: 'Kelurahan Sambikerep' },
                                         ]}
-                                        altPrefix="Guru BK"
+                                        altPrefix="Kantor Kelurahan"
                                         shape="ellipse"
                                         radiusX={420}
                                         radiusY={130}
@@ -396,18 +419,19 @@ export default function Welcome({ auth }) {
                                         responsive={true}
                                         className="w-full"
                                         centerContent={
-                                            <div className="w-24 h-24 rounded-full bg-[#185FA5] text-white flex items-center justify-center text-center shadow-xl border-4 border-white">
-                                                <div>
-                                                    <span className="text-sm font-bold">BK</span>
-                                                    <span className="block text-[10px] font-light">SMKN 2</span>
-                                                </div>
+                                            <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-xl border-4 border-white p-3">
+                                                <img
+                                                    src="/images/logo-surabaya.png"
+                                                    alt="Logo Kota Surabaya"
+                                                    className="w-full h-full object-contain"
+                                                />
                                             </div>
                                         }
                                     />
                                 </div>
 
                                 <p className="text-sm text-[#424751] max-w-lg mx-auto mt-8 italic">
-                                    "Kami siap membantu mengembalikan barang berharga Anda dengan profesional dan terpercaya."
+                                    "Serahkan atau ambil barang Anda di kantor kelurahan terdekat, dengan verifikasi yang aman dan terpercaya."
                                 </p>
                             </div>
                         </section>
@@ -434,7 +458,9 @@ export default function Welcome({ auth }) {
                         <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
                             <h2 className="text-4xl md:text-5xl font-extrabold mb-6">Siap Mencari Barangmu?</h2>
                             <p className="text-lg mb-10 max-w-2xl mx-auto opacity-90 leading-relaxed">
-                                Bergabunglah dengan ratusan siswa SMKN 2 Surabaya lainnya yang telah berhasil menemukan barang berharga mereka.
+                                <p className="text-lg mb-10 max-w-2xl mx-auto opacity-90 leading-relaxed">
+                                    Bergabunglah dengan ratusan warga Kecamatan Sambikerep lainnya yang telah berhasil menemukan barang berharga mereka.
+                                </p>
                             </p>
                             <div className="flex flex-col sm:flex-row justify-center gap-6">
                                 {auth.user ? (
@@ -474,14 +500,14 @@ export default function Welcome({ auth }) {
                         <div className="flex flex-col gap-2 items-center md:items-start text-center md:text-left">
                             <div className="flex items-center gap-2 mb-1">
                                 <img
-                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOOBWhTLbCDtXnVNMxHVjEvaEZlWzMfUJwI58LKedypOJ7uEgvteuG0e6Trnca0kSTrsf6eONHy553q7G8hocUGoCCz-Nbf6OkIHlVWO5gbH35g4hSwWkzrOBJUcR7YB7t8UhZZGHVSh-BlfMWpGtlMrAHz16PqOBN6VcxLfGFAngl3UNxrW56YTZC11oBExGyxpPASy02CCaZ02pGzJHTqGjI0NsCLHl1OVkqMA4hsyI02NWsk3Nq0znend3IHwlw13TUT0T16FE"
-                                    alt="SMKN 2 Surabaya Logo"
+                                    src="/images/logo_temubarang_bg.png"
+                                    alt="Logo TemuBarang Kecamatan Sambikerep"
                                     className="h-8 w-auto object-contain"
                                 />
                                 <span className="text-lg font-bold text-[#004782] ml-2">TemuBarang</span>
                             </div>
                             <p className="text-sm text-[#424751] max-w-xs">
-                                © 2024 TemuBarang SMKN 2 Surabaya. Recovering lost items with relief and order.
+                                © 2025 TemuBarang Kecamatan Sambikerep. Recovering lost items with relief and order.
                             </p>
                         </div>
 

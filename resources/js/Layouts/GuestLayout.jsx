@@ -1,4 +1,3 @@
-import ApplicationLogo from '@/Components/ApplicationLogo';
 import { Link } from '@inertiajs/react';
 
 export default function GuestLayout({ children }) {
@@ -8,11 +7,12 @@ export default function GuestLayout({ children }) {
                 {/* Logo */}
                 <div className="flex justify-center">
                     <Link href="/">
-                        <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg hover:bg-blue-700 transition duration-300">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="11" cy="11" r="8"/>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                            </svg>
+                        <div className="w-24 h-24 flex items-center justify-center transition duration-300 hover:scale-105">
+                            <img
+                                src="/images/logo_temubarang_bg.png"
+                                alt="Logo TemuBarang"
+                                className="w-full h-full object-contain drop-shadow-lg"
+                            />
                         </div>
                     </Link>
                 </div>

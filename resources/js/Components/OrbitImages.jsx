@@ -90,7 +90,47 @@ function OrbitItem({ item, index, totalItems, path, itemSize, rotation, progress
         offsetDistance,
       }}
     >
-      <div style={{ transform: `rotate(${-rotation}deg)` }}>{item}</div>
+      <div
+        style={{
+          transform: `rotate(${-rotation}deg)`,
+          width: '100%',
+          height: '100%',
+          position: 'relative',
+        }}
+      >
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            borderRadius: '9999px',
+            overflow: 'hidden',
+          }}
+        >
+          {item.image}
+        </div>
+
+        {item.label && (
+          <span
+            style={{
+              position: 'absolute',
+              top: '100%',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              marginTop: 10,
+              whiteSpace: 'nowrap',
+              fontSize: 16,
+              fontWeight: 700,
+              color: '#185FA5',
+              background: 'rgba(255,255,255,0.92)',
+              padding: '4px 14px',
+              borderRadius: 9999,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            }}
+          >
+            {item.label}
+          </span>
+        )}
+      </div>
     </motion.div>
   );
 }
@@ -183,15 +223,23 @@ export default function OrbitImages({
   const containerWidth = responsive ? '100%' : (typeof width === 'number' ? width : '100%');
   const containerHeight = responsive ? 'auto' : (typeof height === 'number' ? height : (typeof width === 'number' ? width : 'auto'));
 
-  const items = images.map((src, index) => (
-    <img
-      key={src}
-      src={src}
-      alt={`${altPrefix} ${index + 1}`}
-      draggable={false}
-      className="w-full h-full object-cover rounded-full border-2 border-white shadow-lg"
-    />
-  ));
+  const items = images.map((img, index) => {
+    const src = typeof img === 'string' ? img : img.src;
+    const label = typeof img === 'string' ? null : img.label;
+
+    return {
+      label,
+      image: (
+        <img
+          src={src}
+          alt={label || `${altPrefix} ${index + 1}`}
+          draggable={false}
+          className="w-full h-full object-cover"
+          style={{ borderRadius: '9999px' }}
+        />
+      ),
+    };
+  });
 
   return (
     <div
