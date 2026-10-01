@@ -201,7 +201,7 @@ export default function SearchPage() {
                     <header className="mb-6">
                         <h2 className="text-2xl md:text-3xl font-extrabold text-[#185FA5] tracking-tight">Cari Barang Temuan &amp; Hilang</h2>
                         <p className="text-gray-500 text-sm max-w-2xl mt-1">
-                            Gunakan pencarian cerdas kami untuk menemukan kembali barang berharga Anda yang hilang di lingkungan sekolah.
+                            Gunakan pencarian cerdas kami untuk menemukan kembali barang berharga Anda yang hilang di lingkungan Kecamatan Sambikerep.
                         </p>
                     </header>
                     

@@ -58,8 +58,8 @@ export default function Edit({ mustVerifyEmail, status }) {
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <h3 className="text-xl md:text-2xl font-bold text-gray-900">{user?.name || 'Pengguna'}</h3>
                                     <span className="px-3 py-1 bg-[#185FA5]/10 text-[#185FA5] text-xs font-semibold rounded-full border border-[#185FA5]/20 flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-sm">school</span>
-                                        {user?.role === 'admin' ? 'Admin Sekolah' : 'Siswa'}
+                                        <span className="material-symbols-outlined text-sm">location_city</span>
+                                        {user?.role === 'super_admin' || user?.role === 'admin_kelurahan' ? 'Admin Kecamatan' : 'Warga'}
                                     </span>
                                 </div>
                                 <p className="text-sm text-gray-500">{user?.email}</p>
@@ -119,7 +119,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                                             <span className="font-bold text-xl">{user?.returned_count || 0}</span>
                                         </div>
                                         <div className="pt-3 border-t border-white/20">
-                                            <p className="text-xs opacity-90 italic">"Terima kasih telah membantu warga sekolah!"</p>
+                                            <p className="text-xs opacity-90 italic">"Terima kasih telah membantu warga kecamatan!"</p>
                                         </div>
                                     </div>
                                 </div>

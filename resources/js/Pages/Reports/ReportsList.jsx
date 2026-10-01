@@ -383,7 +383,7 @@ export default function ReportsList() {
                     <header className="flex justify-between items-end mb-6">
                         <div>
                             <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">Semua Laporan</h1>
-                            <p className="text-gray-500 text-sm">Temukan barang hilang atau temuan di lingkungan sekolah</p>
+                            <p className="text-gray-500 text-sm">Temukan barang hilang atau temuan di lingkungan Kecamatan Sambikerep</p>
                         </div>
                         <Link 
                             href="/reports/create" 
