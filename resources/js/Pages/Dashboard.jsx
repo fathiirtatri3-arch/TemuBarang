@@ -53,7 +53,7 @@ export default function Dashboard() {
     const { auth } = usePage().props;
     const user = auth?.user;
     const userName = user?.name || 'Pengguna';
-    const isAdmin = user?.role === 'admin';
+    const isAdmin = user?.role === 'super_admin' || user?.role === 'admin_kelurahan';
 
     const tips = [
         { icon: 'label', title: 'Label Nama', desc: 'Berikan inisial atau nama pada barang pribadi.' },
@@ -120,12 +120,12 @@ export default function Dashboard() {
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                                 <div className="text-white">
                                     <div className="flex items-center gap-2 mb-1 opacity-80">
-                                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>school</span>
-                                        <p className="text-[10px] font-black uppercase tracking-widest">Admin Management System</p>
+                                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>location_city</span>
+                                        <p className="text-[10px] font-black uppercase tracking-widest">Sistem Informasi Kecamatan</p>
                                     </div>
-                                    <h2 style={{ fontSize: '2.8rem', fontWeight: 900, lineHeight: 1.1 }} className="mb-1 text-white">Portal Sekolah</h2>
+                                    <h2 style={{ fontSize: '2.8rem', fontWeight: 900, lineHeight: 1.1 }} className="mb-1 text-white">Portal Kecamatan</h2>
                                     <p className="text-sm opacity-75 max-w-sm">
-                                        Lacak, kelola, dan kembalikan barang hilang di area sekolah dengan sistem otomasi AI.
+                                        Lacak, kelola, dan kembalikan barang hilang di area kecamatan dengan sistem otomasi AI.
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -149,14 +149,14 @@ export default function Dashboard() {
                                     {/* Avatar + greeting */}
                                     <div className="flex items-center gap-4">
                                         <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
-                                             style={{ background: 'rgba(255,255,255,0.15)' }}>
-                                            {isAdmin ? '🏫' : '🎒'}
+                                            style={{ background: 'rgba(255,255,255,0.15)' }}>
+                                            {isAdmin ? '🏛️' : '👤'}
                                         </div>
                                         <div className="text-white">
                                             <div className="flex items-center gap-2 mb-0.5">
                                                 <span className="text-sm opacity-80">{greetingIcon} {greeting},</span>
                                                 <span className="bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide">
-                                                    {isAdmin ? 'Staff' : 'Siswa'}
+                                                    {isAdmin ? 'Admin' : 'Warga'}
                                                 </span>
                                             </div>
                                             <h3 className="text-xl font-black">{userName}</h3>
@@ -302,7 +302,7 @@ export default function Dashboard() {
                                                             </div>
 
                                                             <p className="text-sm text-gray-500 line-clamp-2 mb-3">
-                                                                {item.description || 'Ditemukan di area sekolah.'}
+                                                                {item.description || 'Ditemukan di area kecamatan.'}
                                                             </p>
 
                                                             {/* Footer: date + button */}
@@ -349,7 +349,7 @@ export default function Dashboard() {
                                     <div className="mt-6 bg-[#185FA5] rounded-xl p-4 text-white text-center">
                                         <p className="text-sm font-medium mb-2">Ingin tips lengkap?</p>
                                         <button className="w-full py-2 rounded-lg font-bold text-xs transition-colors hover:bg-white/20" style={{ background: 'rgba(255,255,255,0.15)' }}>
-                                            Unduh Panduan Siswa
+                                            Unduh Panduan Warga
                                         </button>
                                     </div>
                                 </div>

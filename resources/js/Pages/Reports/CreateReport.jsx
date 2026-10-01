@@ -405,7 +405,7 @@ export default function CreateReport() {
                                                 className={`w-full pl-12 pr-5 py-4 rounded-2xl border ${
                                                     (errors.location || liveErrors.location) ? 'border-red-500' : 'border-gray-200'
                                                 } bg-white outline-none focus:ring-4 focus:ring-blue-500 transition-all duration-300`}
-                                                placeholder={data.type === 'lost' ? "Contoh: Ruang 203, Kantin" : "Contoh: Ruang 203, Kantin"}
+                                                placeholder={data.type === 'lost' ? "Contoh: Jl. Raya Jelidro, Taman" : "Contoh: Jl. Raya Jelidro, Taman"}
                                                 required
                                             />
                                         </div>
@@ -585,7 +585,7 @@ export default function CreateReport() {
                                 </div>
                                 <h4 className="font-bold text-[#185FA5] text-lg mb-2">Membantu sesama</h4>
                                 <p className="text-sm text-gray-600 leading-relaxed">
-                                    Sistem TemuBarang didesain untuk memudahkan koordinasi antara penemu dan pemilik barang di lingkungan sekolah.
+                                    Sistem TemuBarang didesain untuk memudahkan koordinasi antara penemu dan pemilik barang di lingkungan kecamatan.
                                 </p>
                             </div>
 
@@ -604,7 +604,7 @@ export default function CreateReport() {
                                     </div>
                                     <div className="flex gap-4">
                                         <span className="flex-shrink-0 w-6 h-6 bg-white rounded-full flex items-center justify-center text-[10px] font-bold text-[#185FA5] shadow-sm">2</span>
-                                        <p className="text-sm text-gray-600 leading-snug">Lokasi yang spesifik (misal: "Lantai 2 dekat tangga perpustakaan").</p>
+                                        <p className="text-sm text-gray-600 leading-snug">Lokasi yang spesifik (misal: "Jl. Raya Jelidro dekat minimarket").</p>
                                     </div>
                                     <div className="flex gap-4">
                                         <span className="flex-shrink-0 w-6 h-6 bg-white rounded-full flex items-center justify-center text-[10px] font-bold text-[#185FA5] shadow-sm">3</span>
