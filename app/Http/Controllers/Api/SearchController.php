@@ -18,7 +18,7 @@ class SearchController extends Controller
     public function search(Request $request)
     {
         // Query dasar: hanya laporan yang sudah terverifikasi atau selesai
-        $query = Report::with('user')
+        $query = Report::with(['user', 'region'])
             ->whereIn('status', ['verified', 'resolved']);
 
         // Filter berdasarkan keyword (nama barang)
@@ -50,6 +50,11 @@ class SearchController extends Controller
             $query->where('location', 'like', '%' . $request->location . '%');
         }
 
+        // Filter berdasarkan region_id
+        if ($request->has('region_id') && !empty($request->region_id)) {
+            $query->where('region_id', $request->region_id);
+        }
+
         // Filter berdasarkan tanggal dari
         if ($request->has('date_from') && !empty($request->date_from)) {
             $query->whereDate('date', '>=', $request->date_from);
@@ -61,16 +66,17 @@ class SearchController extends Controller
         }
 
         // Sorting
-        $sortField = $request->get('sort_by', 'created_at');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        
-        // Validasi field sorting yang diizinkan
-        $allowedSortFields = ['created_at', 'item_name', 'date', 'location'];
-        if (in_array($sortField, $allowedSortFields)) {
-            $query->orderBy($sortField, $sortDirection === 'asc' ? 'asc' : 'desc');
-        } else {
-            $query->orderBy('created_at', 'desc');
-        }
+        $sortMap = [
+            'latest'       => ['created_at', 'desc'],
+            'oldest'       => ['created_at', 'asc'],
+            'name_asc'     => ['item_name', 'asc'],
+            'name_desc'    => ['item_name', 'desc'],
+            'location_asc' => ['location', 'asc'],
+        ];
+
+        $sortField = $request->get('sort_by', 'latest');
+        [$column, $sortDirection] = $sortMap[$sortField] ?? ['created_at', 'desc'];
+        $query->orderBy($column, $sortDirection);
 
         // Pagination (12 item per halaman)
         $perPage = $request->get('per_page', 12);
@@ -93,6 +99,7 @@ class SearchController extends Controller
                 'type' => $request->type,
                 'category' => $request->category,
                 'location' => $request->location,
+                'region_id' => $request->region_id,
                 'date_from' => $request->date_from,
                 'date_to' => $request->date_to,
                 'sort_by' => $sortField,
@@ -113,12 +120,14 @@ class SearchController extends Controller
             'Dokumen & Surat',
             'Pakaian & Aksesoris',
             'Alat Tulis',
-            'Botol & Tempat Minum',
+            'Perlengkapan Makan & Minum',
             'Dompet & Tas',
-            'Kartu (Pelajar/ATM)',
+            'Kartu & Identitas',
             'Kunci',
-            'Perhiasan',
-            'Lainnya'
+            'Perhiasan & Aksesoris',
+            'Kendaraan & Aksesoris',
+            'Anak & Bayi',
+            'Lainnya',
         ];
 
         return response()->json([

@@ -8,6 +8,7 @@ export default function SearchPage() {
     const [searchResults, setSearchResults] = useState([]);
     const [loading, setLoading] = useState(false);
     const [categories, setCategories] = useState([]);
+    const [regions, setRegions] = useState([]); 
     const [pagination, setPagination] = useState({
         current_page: 1,
         last_page: 1,
@@ -21,6 +22,7 @@ export default function SearchPage() {
         type: 'all',
         category: '',
         location: '',
+        region_id: '',
         date_from: '',
         date_to: '',
         sort_by: 'latest',
@@ -41,12 +43,31 @@ export default function SearchPage() {
             try {
                 const response = await fetch('/api/search-categories');
                 const data = await response.json();
-                setCategories(data.categories || []);
+                setCategories(data.categories || data.data || []);
             } catch (error) {
                 console.error('Failed to fetch categories:', error);
             }
         };
         fetchCategories();
+    }, []);
+
+    // ⭐ TAMBAHKAN INI - Fetch regions untuk filter kelurahan
+    useEffect(() => {
+        const fetchRegions = async () => {
+            try {
+                const response = await fetch('/api/regions', {
+                    credentials: 'include',
+                    headers: { 'Accept': 'application/json' }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    setRegions(data.data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch regions:', error);
+            }
+        };
+        fetchRegions();
     }, []);
     
     // Fetch search results
@@ -60,6 +81,7 @@ export default function SearchPage() {
                 ...(filters.type !== 'all' && { type: filters.type }),
                 ...(filters.category && { category: filters.category }),
                 ...(filters.location && { location: filters.location }),
+                ...(filters.region_id && { region_id: filters.region_id }),
                 ...(filters.date_from && { date_from: filters.date_from }),
                 ...(filters.date_to && { date_to: filters.date_to }),
                 sort_by: filters.sort_by
@@ -72,11 +94,12 @@ export default function SearchPage() {
             console.log('Data length:', data.data?.length); 
             
             setSearchResults(data.data || []);
+            const p = data.pagination || {};
             setPagination({
-                current_page: data.current_page || 1,
-                last_page: data.last_page || 1,
-                per_page: data.per_page || 12,
-                total: data.total || data.data?.length || 0
+                current_page: p.current_page || 1,
+                last_page: p.last_page || 1,
+                per_page: p.per_page || 12,
+                total: p.total ?? data.data?.length ?? 0
             });
         } catch (error) {
             console.error('Search error:', error);
@@ -102,7 +125,7 @@ export default function SearchPage() {
         } else {
             fetchResults(1);
         }
-    }, [filters.type, filters.category, filters.location, filters.date_from, filters.date_to, filters.sort_by, filters.per_page]);
+        }, [filters.type, filters.category, filters.location, filters.region_id, filters.date_from, filters.date_to, filters.sort_by, filters.per_page]);
     
     // Handle keyword change with debounce
     useEffect(() => {
@@ -123,6 +146,7 @@ export default function SearchPage() {
             type: 'all',
             category: '',
             location: '',
+            region_id: '',
             date_from: '',
             date_to: '',
             sort_by: 'latest',
@@ -335,6 +359,21 @@ export default function SearchPage() {
                                         className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#185FA5] focus:border-transparent text-sm"
                                     />
                                 </div>
+
+                                {/* ⭐ Kelurahan - TAMBAHKAN DI SINI ⭐ */}
+                                <div className="mb-5">
+                                    <span className="block font-semibold text-sm text-gray-700 mb-2">Kelurahan</span>
+                                    <select
+                                        value={filters.region_id}
+                                        onChange={(e) => handleFilterChange('region_id', e.target.value)}
+                                        className="w-full rounded-lg border-gray-200 focus:border-[#185FA5] focus:ring-[#185FA5] text-sm bg-white p-2"
+                                    >
+                                        <option value="">Semua Kelurahan</option>
+                                        {regions.map(region => (
+                                            <option key={region.id} value={region.id}>{region.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
                                 
                                 {/* Date Range */}
                                 <div className="mb-5">
@@ -496,7 +535,7 @@ export default function SearchPage() {
                                                                 <span className="text-xs text-gray-400">#{report.id}</span>
                                                             </div>
                                                             <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                                                                {report.description || `Barang ${report.type === 'lost' ? 'hilang' : 'ditemukan'} di area sekolah.`}
+                                                                {report.description || `Barang ${report.type === 'lost' ? 'hilang' : 'ditemukan'} di area kecamatan.`}
                                                             </p>
                                                         </div>
                                                         
@@ -505,6 +544,12 @@ export default function SearchPage() {
                                                                 <span className="material-symbols-outlined text-sm">location_on</span>
                                                                 {report.location}
                                                             </div>
+                                                            {report.region && (
+                                                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                                    <span className="material-symbols-outlined text-sm">map</span>
+                                                                    {report.region.name}
+                                                                </div>
+                                                            )}
                                                             <div className="flex items-center gap-2 text-xs text-gray-500">
                                                                 <span className="material-symbols-outlined text-sm">calendar_today</span>
                                                                 {formatDate(report.date)}

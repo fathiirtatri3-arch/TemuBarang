@@ -54,17 +54,25 @@ export default function CreateReport() {
                 if (data.success) {
                     setCategories(data.data);
                 } else {
-                    setCategories(['Elektronik', 'Alat Tulis', 'Pakaian', 'Aksesoris', 'Perlengkapan', 'Lainnya']);
+                    setCategories([
+                        'Elektronik', 'Dokumen & Surat', 'Pakaian & Aksesoris', 'Alat Tulis',
+                        'Perlengkapan Makan & Minum', 'Dompet & Tas', 'Kartu & Identitas', 'Kunci',
+                        'Perhiasan & Aksesoris', 'Kendaraan & Aksesoris', 'Anak & Bayi', 'Lainnya'
+                    ]);
                 }
-            } catch (error) {
-                console.error('Error fetching categories:', error);
-                setCategories(['Elektronik', 'Alat Tulis', 'Pakaian', 'Aksesoris', 'Perlengkapan', 'Lainnya']);
-            } finally {
-                setCategoriesLoading(false);
-            }
-        };
-        fetchCategories();
-    }, []);
+                } catch (error) {
+                    console.error('Error fetching categories:', error);
+                    setCategories([
+                        'Elektronik', 'Dokumen & Surat', 'Pakaian & Aksesoris', 'Alat Tulis',
+                        'Perlengkapan Makan & Minum', 'Dompet & Tas', 'Kartu & Identitas', 'Kunci',
+                        'Perhiasan & Aksesoris', 'Kendaraan & Aksesoris', 'Anak & Bayi', 'Lainnya'
+                    ]);
+                } finally {
+                    setCategoriesLoading(false);
+                }
+            };
+            fetchCategories();
+        }, []);
 
     // ⭐ TAMBAHKAN USEFFECT UNTUK FETCH REGIONS
     useEffect(() => {

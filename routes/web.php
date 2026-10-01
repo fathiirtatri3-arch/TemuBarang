@@ -122,7 +122,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('reports.bulk-delete');
     
     Route::get('/reports/{id}', function ($id) {
-        $report = \App\Models\Report::with('user')->findOrFail($id);
+        $report = \App\Models\Report::with(['user', 'region'])->findOrFail($id);
         return Inertia::render('Reports/ReportDetail', ['report' => $report]);
     })->name('reports.show');
     

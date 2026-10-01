@@ -57,6 +57,22 @@ class NotificationHelper
             }
         }
     }
+
+    /**
+     * Normalisasi kategori lama ke kategori baru
+     * Berguna untuk data lama yang masih pakai kategori versi sekolah
+     */
+    private static function normalizeCategory($category)
+    {
+        $mapping = [
+            // Kategori lama → Kategori baru
+            'Botol & Tempat Minum' => 'Perlengkapan Makan & Minum',
+            'Kartu (Pelajar/ATM)'  => 'Kartu & Identitas',
+            'Perhiasan'            => 'Perhiasan & Aksesoris',
+        ];
+
+        return $mapping[$category] ?? $category;
+    }
     
     private static function calculateMatchScore($report1, $report2)
     {
@@ -67,7 +83,11 @@ class NotificationHelper
             $score += 40;
         }
         
-        if ($report1->category === $report2->category) {
+        // Kategori cocok (30%) — dengan normalisasi
+        $cat1 = self::normalizeCategory($report1->category);
+        $cat2 = self::normalizeCategory($report2->category);
+
+        if ($cat1 === $cat2) {
             $score += 30;
         }
         
