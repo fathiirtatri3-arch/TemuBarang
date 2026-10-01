@@ -54,11 +54,19 @@ export default function EditReport() {
                 if (data.success) {
                     setCategories(data.data);
                 } else {
-                    setCategories(['Elektronik', 'Alat Tulis', 'Pakaian', 'Aksesoris', 'Perlengkapan', 'Lainnya']);
-                }
+                setCategories([
+                    'Elektronik', 'Dokumen & Surat', 'Pakaian & Aksesoris', 'Alat Tulis',
+                    'Perlengkapan Makan & Minum', 'Dompet & Tas', 'Kartu & Identitas', 'Kunci',
+                    'Perhiasan & Aksesoris', 'Kendaraan & Aksesoris', 'Anak & Bayi', 'Lainnya'
+                ]);
+            }
             } catch (error) {
                 console.error('Error fetching categories:', error);
-                setCategories(['Elektronik', 'Alat Tulis', 'Pakaian', 'Aksesoris', 'Perlengkapan', 'Lainnya']);
+                setCategories([
+                    'Elektronik', 'Dokumen & Surat', 'Pakaian & Aksesoris', 'Alat Tulis',
+                    'Perlengkapan Makan & Minum', 'Dompet & Tas', 'Kartu & Identitas', 'Kunci',
+                    'Perhiasan & Aksesoris', 'Kendaraan & Aksesoris', 'Anak & Bayi', 'Lainnya'
+                ]);
             } finally {
                 setCategoriesLoading(false);
             }
@@ -117,6 +125,11 @@ export default function EditReport() {
     const handleSubmit = (e) => {
         e.preventDefault();
         
+        if (!data.latitude || !data.longitude) {
+            showToast('Tandai lokasi di peta terlebih dahulu!', 'error');
+            return;
+        }
+
         // Validasi sebelum submit
         if (Object.keys(liveErrors).length > 0) {
             showToast('Harap perbaiki error yang ada', 'error');
@@ -153,15 +166,18 @@ export default function EditReport() {
                 }, 500);
             },
             onError: (errors) => {
-                if (errors.item_name) {
-                    showToast(errors.item_name, 'error');
-                } else if (errors.description) {
-                    showToast(errors.description, 'error');
-                } else if (errors.location) {
-                    showToast(errors.location, 'error');
-                } else {
-                    showToast('Gagal memperbarui laporan. Cek kembali data Anda.', 'error');
-                }
+                console.error('Submit errors:', errors);
+                showToast(
+                    errors.item_name ||
+                    errors.description ||
+                    errors.location ||
+                    errors.region_id ||
+                    errors.latitude ||
+                    errors.longitude ||
+                    errors.photo ||
+                    'Gagal memperbarui laporan. Cek kembali data Anda.',
+                    'error'
+                );
             },
         });
     };

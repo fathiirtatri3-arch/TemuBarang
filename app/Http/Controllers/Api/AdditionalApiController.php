@@ -24,15 +24,17 @@ class AdditionalApiController extends Controller
             'Dokumen & Surat',
             'Pakaian & Aksesoris',
             'Alat Tulis',
-            'Botol & Tempat Minum',
+            'Perlengkapan Makan & Minum',
             'Dompet & Tas',
-            'Kartu (Pelajar/ATM)',
+            'Kartu & Identitas',
             'Kunci',
-            'Perhiasan',
-            'Lainnya'
+            'Perhiasan & Aksesoris',
+            'Kendaraan & Aksesoris',
+            'Anak & Bayi',
+            'Lainnya',
         ];
 
-        return $this->success($categories);  // ⭐ UBAH INI
+        return $this->success($categories);
     }
 
     /**
@@ -158,6 +160,22 @@ class AdditionalApiController extends Controller
         
         return $this->success($activities);  // ⭐ UBAH INI
     }
+
+    /**
+     * Normalisasi kategori lama ke kategori baru
+     * Berguna untuk data lama yang masih pakai kategori versi sekolah
+     */
+    private function normalizeCategory($category)
+    {
+        $mapping = [
+            // Kategori lama → Kategori baru
+            'Botol & Tempat Minum' => 'Perlengkapan Makan & Minum',
+            'Kartu (Pelajar/ATM)'  => 'Kartu & Identitas',
+            'Perhiasan'            => 'Perhiasan & Aksesoris',
+        ];
+
+        return $mapping[$category] ?? $category;
+    }
     
     /**
      * Fungsi helper untuk menghitung skor kecocokan sederhana
@@ -172,8 +190,11 @@ class AdditionalApiController extends Controller
             $score += 40;
         }
         
-        // Kategori cocok (30%)
-        if ($report1->category === $report2->category) {
+       // Kategori cocok (30%) — dengan normalisasi
+        $cat1 = $this->normalizeCategory($report1->category);
+        $cat2 = $this->normalizeCategory($report2->category);
+
+        if ($cat1 === $cat2) {
             $score += 30;
         }
         

@@ -16,7 +16,7 @@ export default function ReportDetail() {
     const { auth } = usePage().props;
     const user = auth?.user;
     const isOwner = user && report.user_id === user.id;
-    const isAdmin = user?.role === 'admin';
+    const isAdmin = user?.role === 'super_admin' || user?.role === 'admin_kelurahan';
 
     const { delete: destroy, processing } = useForm();
 
@@ -245,6 +245,7 @@ export default function ReportDetail() {
 
                                     {/* Info grid */}
                                     <div className="grid grid-cols-2 gap-4">
+                                        {/* Lokasi Terakhir */}
                                         <div className="flex items-start gap-3">
                                             <div className="w-9 h-9 rounded-xl bg-[#EAF1FF] flex items-center justify-center flex-shrink-0">
                                                 <svg className="w-4 h-4 text-[#185FA5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -254,6 +255,21 @@ export default function ReportDetail() {
                                                 <p className="text-sm font-semibold text-gray-800">{report.location}</p>
                                             </div>
                                         </div>
+                                        
+                                        {/* ⭐ Kelurahan - TAMBAHKAN DI SINI ⭐ */}
+                                        {report.region && (
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-9 h-9 rounded-xl bg-[#EAF1FF] flex items-center justify-center flex-shrink-0">
+                                                    <svg className="w-4 h-4 text-[#185FA5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-400 mb-0.5">Kelurahan</p>
+                                                    <p className="text-sm font-semibold text-gray-800">{report.region.name}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        
+                                        {/* Tanggal Kejadian */}
                                         <div className="flex items-start gap-3">
                                             <div className="w-9 h-9 rounded-xl bg-[#EAF1FF] flex items-center justify-center flex-shrink-0">
                                                 <svg className="w-4 h-4 text-[#185FA5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -280,7 +296,11 @@ export default function ReportDetail() {
                                     </div>
                                     <div>
                                         <p className="font-bold text-gray-900 text-sm">{report.user?.name || 'Unknown'}</p>
-                                        <p className="text-xs text-gray-400">{report.user?.role === 'admin' ? 'Admin' : 'Siswa'}</p>
+                                        <p className="text-xs text-gray-400">
+                                            {report.user?.role === 'super_admin' ? 'Super Admin' 
+                                            : report.user?.role === 'admin_kelurahan' ? 'Admin Kelurahan' 
+                                            : 'Warga'}
+                                        </p>
                                     </div>
                                 </div>
 
