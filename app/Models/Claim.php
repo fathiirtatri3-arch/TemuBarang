@@ -18,6 +18,7 @@ class Claim extends Model
         'admin_note',
         'verified_at',
         'verified_by',
+        'lost_report_id',
     ];
 
     protected $casts = [

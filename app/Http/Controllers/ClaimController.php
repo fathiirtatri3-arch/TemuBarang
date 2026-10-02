@@ -23,6 +23,10 @@ public function store(Request $request, $reportId)
     if ($report->user_id === $user->id) {
         return response()->json(['message' => 'Anda tidak bisa mengklaim barang sendiri.'], 422);
     }
+
+    if ($report->status !== 'verified') {
+        return response()->json(['message' => 'Laporan ini tidak bisa diklaim saat ini.'], 422);
+    }
     
     $existingClaim = Claim::where('report_id', $reportId)
         ->where('claimant_id', $user->id)
@@ -33,7 +37,17 @@ public function store(Request $request, $reportId)
         return response()->json(['message' => 'Anda sudah pernah mengklaim barang ini.'], 422);
     }
     
+    $lostReportId = null;
+    if ($request->filled('lost_report_id')) {
+        $lost = Report::where('id', $request->lost_report_id)
+            ->where('user_id', $user->id)
+            ->where('type', 'lost')
+            ->first();
+        $lostReportId = $lost?->id;
+    }
+
     $claim = Claim::create([
+        'lost_report_id' => $lostReportId,
         'report_id' => $reportId,
         'claimant_id' => $user->id,
         'owner_id' => $report->user_id,
@@ -72,12 +86,25 @@ public function store(Request $request, $reportId)
     // Admin verifikasi klaim
 public function verify(Request $request, $id)
 {
+    $user = auth()->user();
+    if (!in_array($user->role, ['super_admin', 'admin_kelurahan', 'admin'])) {
+        abort(403, 'Anda tidak berhak memverifikasi klaim');
+    }
+
     $request->validate([
         'status' => 'required|in:approved,rejected',
-        'admin_note' => 'nullable|string|max=500',
+        'admin_note' => 'nullable|string|max:500',
     ]);
     
     $claim = Claim::with(['report', 'claimant'])->findOrFail($id);
+
+    if ($user->role === 'admin_kelurahan' && $claim->report->region_id !== $user->region_id) {
+        abort(403, 'Klaim ini di luar wilayah Anda');
+    }
+
+    if ($claim->status !== 'pending') {
+        return redirect()->back()->withErrors(['error' => 'Klaim ini sudah diproses.']);
+    }
     
     $claim->update([
         'status' => $request->status,
@@ -91,10 +118,12 @@ public function verify(Request $request, $id)
         // Update laporan TEMUAN (yang diklaim)
         $claim->report->update(['status' => 'resolved']);
         
-        // Update SEMUA laporan HILANG milik pengklaim
-        \App\Models\Report::where('user_id', $claim->claimant_id)
-            ->where('type', 'lost')
-            ->update(['status' => 'resolved']);
+        // Update hanya laporan HILANG yang dirujuk klaim ini
+        if ($claim->lost_report_id) {
+            \App\Models\Report::where('id', $claim->lost_report_id)
+                ->where('user_id', $claim->claimant_id)
+                ->update(['status' => 'resolved']);
+        }
     }
     
     // Notifikasi ke user yang mengklaim

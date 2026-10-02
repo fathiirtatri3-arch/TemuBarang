@@ -18,11 +18,20 @@ class MatchingController extends Controller
 
     public function match(Report $report)
     {
+        $user = auth()->user();
+        $isAdmin = in_array($user->role, ['super_admin', 'admin_kelurahan', 'admin']);
+
+        // Hanya pemilik laporan (atau admin) yang boleh mencari kecocokan
+        if ($report->user_id !== $user->id && !$isAdmin) {
+            abort(403, 'Anda tidak berhak mencari kecocokan untuk laporan ini');
+        }
+
         $targetType = $report->type === 'lost' ? 'found' : 'lost';
 
         $matches = Report::where('type', $targetType)
             ->where('status', 'verified')
             ->where('id', '!=', $report->id)
+            ->where('user_id', '!=', $report->user_id)
             ->get()
             ->map(function ($targetReport) use ($report) {
                 $result = $this->calculateFinalScore($report, $targetReport);
