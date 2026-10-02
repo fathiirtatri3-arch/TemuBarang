@@ -54,49 +54,38 @@ class MatchingController extends Controller
 
     private function calculateFinalScore($report1, $report2): array
     {
-        // ── Skor Teks ────────────────────────────────────
-        $textScore   = 0;
-        $criteria    = [];
+        // ── Skor Teks (aturan sama dengan halaman Pencocokan) ──
+        $textScore = 0;
+        $criteria  = [];
 
-        // Nama barang (40 poin)
-        $nameSim = $this->calculateStringSimilarity($report1->item_name, $report2->item_name);
-        if ($nameSim >= 70) {
-            $textScore += 40;
-            $criteria[] = 'name';
-        } elseif ($nameSim >= 50) {
+        // Nama barang → 20 poin (saling mengandung)
+        $name1 = strtolower(trim($report1->item_name));
+        $name2 = strtolower(trim($report2->item_name));
+        if ($name1 !== '' && $name2 !== '' &&
+            (str_contains($name1, $name2) || str_contains($name2, $name1))) {
             $textScore += 20;
-            $criteria[] = 'name_partial';
+            $criteria[] = 'name';
         }
 
-        // Kategori (25 poin)
+        // Kategori → 20 poin
         if (!empty($report1->category) && !empty($report2->category) &&
             strtolower($report1->category) === strtolower($report2->category)) {
-            $textScore += 25;
+            $textScore += 20;
             $criteria[] = 'category';
         }
 
-        // Warna (20 poin)
+        // Warna → 10 poin (saling mengandung)
         if (!empty($report1->color) && !empty($report2->color)) {
-            $colorSim = $this->calculateStringSimilarity($report1->color, $report2->color);
-            if ($colorSim >= 70) {
-                $textScore += 20;
-                $criteria[] = 'color';
-            } elseif ($colorSim >= 50) {
+            $c1 = strtolower(trim($report1->color));
+            $c2 = strtolower(trim($report2->color));
+            if (str_contains($c1, $c2) || str_contains($c2, $c1)) {
                 $textScore += 10;
-                $criteria[] = 'color_partial';
+                $criteria[] = 'color';
             }
         }
 
-        // Lokasi (15 poin)
-        if (!empty($report1->location) && !empty($report2->location) &&
-            (str_contains(strtolower($report1->location), strtolower($report2->location)) ||
-             str_contains(strtolower($report2->location), strtolower($report1->location)))) {
-            $textScore += 15;
-            $criteria[] = 'location';
-        }
-
-        // Cap text score maksimal 100
-        $textScore = min($textScore, 100);
+        // Skala ke 0-100 (poin di atas maksimal 50)
+        $textScore = min($textScore * 2, 100);
 
         // ── Skor Foto via Python ──────────────────────────
         $photoScore = 0.0;

@@ -1090,6 +1090,130 @@ Bobot: CNN 60% + CV klasik 40%
 
 Fallback: Jika CNN gagal → pakai CV klasik saja
 
+---
+
+## 📌 Update Progres Terbaru (Oktober 2026) — Perbaikan Konsistensi Skor
+
+> **Catatan:** Bagian ini adalah catatan progres terbaru setelah README utama dibuat. Tidak mengubah bagian atas, hanya menambahkan update.
+
+### 🎯 Tujuan Update
+
+Memperbaiki **inkonsistensi skor** antara dua akun (penemu & pemilik barang) dan antara dua halaman (Halaman Pencocokan & Tombol Cari Kecocokan). Sebelum perbaikan, pasangan laporan yang sama bisa menampilkan skor yang berbeda tergantung dari mana dilihat.
+
+### 🐛 Bug 1: Selisih 10 Poin Antara 2 Akun
+
+**Gejala:**
+- Penemu melihat skor **83.96%**
+- Pemilik melihat skor **73.96%**
+- **Selisih: 10 poin** (angka bulat, tanda ada aturan yang tidak simetris)
+
+**Penyebab:**
+Di `MatchingPageController.php`, aturan skor warna hanya cek **satu arah**:
+
+```php
+// ❌ Sebelum: hanya cek satu arah
+if (!empty($report1->color) && !empty($report2->color) &&
+    str_contains(strtolower($report1->color), strtolower($report2->color))) {
+    $textScore += 10;
+}
+Contoh kasus:
+
+Akun	Warna Akun	Warna Lawan	Hasil
+Penemu	biru tua	biru	✅ Cocok (+10)
+Pemilik	biru	biru tua	❌ Tidak cocok (0)
+Solusi:
+
+php
+// ✅ Sesudah: cek dua arah
+if (!empty($report1->color) && !empty($report2->color)) {
+    $c1 = strtolower(trim($report1->color));
+    $c2 = strtolower(trim($report2->color));
+    if (str_contains($c1, $c2) || str_contains($c2, $c1)) {
+        $textScore += 10;
+    }
+}
+File: app/Http/Controllers/MatchingPageController.php
+
+🐛 Bug 2: Selisih 30 Poin Antara 2 Halaman
+Gejala:
+
+Halaman Pencocokan (/matches) menampilkan skor 84.22%
+
+Tombol "Cari Kecocokan" di detail laporan menampilkan skor 54.22%
+
+Selisih: 30 poin untuk pasangan laporan yang sama
+
+Penyebab:
+Dua halaman memakai controller berbeda dengan aturan skor teks berbeda:
+
+Komponen	MatchingPageController	MatchingController
+Nama	str_contains → 20	similarity ≥50% → 40
+Kategori	=== → 20	=== → 25
+Warna	contain → 10	similarity ≥70% → 20
+Lokasi	❌ Tidak dihitung	contain → 15
+Hitungan untuk "tumbler" vs "tumbler 1 milion":
+
+Komponen	Halaman Pencocokan	Tombol Cari Kecocokan
+Nama	contain → 20	similarity 41% → 0
+Kategori	sama → 20	sama → 25
+Warna	contain → 10	similarity 33% → 0
+Lokasi	tidak dihitung → 0	contain → 15
+Total	50 × 2 = 100	40
+Skor Akhir	100×0.5 + 68.43×0.5 = 84.22%	40×0.5 + 68.43×0.5 = 54.22%
+Solusi:
+Samakan aturan MatchingController dengan MatchingPageController (Opsi A).
+
+File: app/Http/Controllers/Api/MatchingController.php — method calculateFinalScore()
+
+Kode baru:
+
+php
+// ── Skor Teks (aturan sama dengan halaman Pencocokan) ──
+$textScore = 0;
+$criteria  = [];
+
+// Nama barang → 20 poin (saling mengandung)
+$name1 = strtolower(trim($report1->item_name));
+$name2 = strtolower(trim($report2->item_name));
+if ($name1 !== '' && $name2 !== '' &&
+    (str_contains($name1, $name2) || str_contains($name2, $name1))) {
+    $textScore += 20;
+    $criteria[] = 'name';
+}
+
+// Kategori → 20 poin
+if (!empty($report1->category) && !empty($report2->category) &&
+    strtolower($report1->category) === strtolower($report2->category)) {
+    $textScore += 20;
+    $criteria[] = 'category';
+}
+
+// Warna → 10 poin (saling mengandung)
+if (!empty($report1->color) && !empty($report2->color)) {
+    $c1 = strtolower(trim($report1->color));
+    $c2 = strtolower(trim($report2->color));
+    if (str_contains($c1, $c2) || str_contains($c2, $c1)) {
+        $textScore += 10;
+        $criteria[] = 'color';
+    }
+}
+
+// Skala ke 0-100 (poin di atas maksimal 50)
+$textScore = min($textScore * 2, 100);
+📊 Hasil Setelah Perbaikan
+Skenario	Sebelum	Sesudah
+Penemu vs Pemilik	83.96% vs 73.96%	✅ Sama
+Halaman Pencocokan vs Tombol Cari	84.22% vs 54.22%	✅ Sama (84.22%)
+⚠️ Catatan Teknis
+1. Duplikasi Aturan di 2 Controller
+Saat ini aturan skor teks masih diduplikasi di:
+
+MatchingPageController (halaman Pencocokan)
+
+MatchingController (tombol Cari Kecocokan)
+
+Risiko: Kalau salah satu diubah, selisih skor bisa muncul lagi.
+
 ## 📋 Cara Menggunakan File Ini
 
 1. **Buka VS Code** di root proyek `temubarang`
