@@ -87,9 +87,12 @@ class MatchingPageController extends Controller
         }
 
         // Warna cocok → 10 poin
-        if (!empty($report1->color) && !empty($report2->color) &&
-            str_contains(strtolower($report1->color), strtolower($report2->color))) {
-            $textScore += 10;
+        if (!empty($report1->color) && !empty($report2->color)) {
+            $c1 = strtolower(trim($report1->color));
+            $c2 = strtolower(trim($report2->color));
+            if (str_contains($c1, $c2) || str_contains($c2, $c1)) {
+                $textScore += 10;
+            }
         }
 
         // Skala teks ke 0-100 (poin di atas maksimal 50)
