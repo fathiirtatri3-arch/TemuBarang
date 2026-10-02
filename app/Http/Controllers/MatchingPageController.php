@@ -92,6 +92,9 @@ class MatchingPageController extends Controller
             $textScore += 10;
         }
 
+        // Skala teks ke 0-100 (poin di atas maksimal 50)
+        $textScore = min($textScore * 2, 100);
+
         // ── Skor Foto (50%) via Python ───────────────────
         $photoScore = 0.0;
 

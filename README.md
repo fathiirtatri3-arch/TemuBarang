@@ -947,6 +947,149 @@ resources/js/Components/
 install
 npm install gsap framer-motion motion lenis
 
+---
+
+## 📌 Update Progres Terbaru (Oktober 2026) — AI Photo Matching v2
+
+> **Catatan:** Bagian ini adalah catatan progres terbaru setelah README utama dibuat. Tidak mengubah bagian atas, hanya menambahkan update.
+
+### 🎯 Tujuan Update
+
+Memperbaiki AI Photo Matching yang sebelumnya **terlalu kaku** (exact match) menjadi **fleksibel** seperti penglihatan manusia — bisa mengenali objek yang sama meski beda sudut, pencahayaan, dan background.
+
+### 🐛 Masalah yang Ditemukan (Investigasi)
+
+| No | Temuan | Dampak |
+|----|--------|--------|
+| 1 | Di `main.py`, `hist_score` dipakai **dua kali** dan HOG dihitung tetapi **tidak dipakai** | Skor lama pada dasarnya hanya menilai "sama-sama biru" |
+| 2 | File gambar dibaca **4 kali**, di-resize paksa ke 640×640 | Boros I/O, dan rasio aspek foto rusak |
+| 3 | Tidak ada **pemerataan cahaya** dan **pengurangan noise** | Sensitif terhadap pencahayaan |
+| 4 | `ratio = good / min_kp` membuat skor AKAZE **selalu kecil** | Foto sama beda sudut hampir tidak pernah dapat skor tinggi |
+| 5 | `MatchingPageController` memberi skor teks maksimal 50, lalu dikalikan 0.5 | Teks yang cocok sempurna hanya menyumbang **25 dari 100 poin** |
+| 6 | CV klasik (AKAZE/ORB) **lemah pada benda mulus** seperti tumbler | Perlu pendekatan lain untuk "mengenali objek yang sama" |
+
+### 🔧 Perbaikan yang Dilakukan
+
+#### 1. `multiverse/python/image_matcher/main.py` (Ditulis Ulang Total)
+
+| Komponen | Sebelum | Sesudah |
+|----------|---------|---------|
+| **Preprocessing** | Resize paksa 640×640 | ✅ Resize jaga rasio + denoise (bilateral) + CLAHE |
+| **File dibaca** | 4× (boros) | ✅ 1× per gambar |
+| **ORB** | ❌ Tidak ada | ✅ Ditambahkan sebagai backup AKAZE |
+| **Histogram HSV** | RGB (sensitif cahaya) | ✅ Hanya H & S, abaikan piksel pucat/gelap |
+| **HOG** | Dihitung tapi tidak dipakai | ✅ Dipakai dengan blur & rescale |
+| **CNN Embedding** | ❌ Tidak ada | ✅ **MobileNetV2 via ONNX Runtime** |
+| **Bobot** | AKAZE 45% + Histogram 55% | ✅ **CNN 60% + CV klasik 40%** |
+| **Fallback** | - | ✅ Jika CNN gagal → pakai CV klasik saja |
+| **Mode test terminal** | ❌ Tidak ada | ✅ `python main.py foto1.jpg foto2.jpg` |
+
+#### 2. Kalibrasi Skor CNN
+
+- **Masalah awal:** Rentang 0.2-0.8 → tumbler vs rokok dapat skor **36.8%** (false positive).
+- **Solusi:** Rentang disetel dari data nyata:
+  - **Cosine 0.55 → 0 poin**
+  - **Cosine 0.90 → 100 poin**
+
+#### 3. `MatchingPageController.php`
+
+- **Masalah:** Skor teks maksimal 50, lalu dikali 0.5 → teks cocok sempurna cuma dapat 25/100.
+- **Solusi:** Skor teks diskalakan ke 0-100 (`min($textScore * 2, 100)`).
+
+#### 4. `ImageMatchingService.php`
+
+- ✅ Tambah `orb_score` di hasil
+- ✅ Timeout naik 10 → 20 detik
+
+#### 5. `NotificationHelper.php` (Opsional)
+
+- ✅ Sinonim pakai word boundary (`\b...\b`)
+- ✅ `tas` tidak lagi cocok dengan `stasiun`
+
+### 📊 Hasil Pengujian
+
+| Pasangan | Skor Foto Lama | Skor Foto Baru | Status |
+|----------|----------------|----------------|--------|
+| Tumbler vs Tumbler (sudut beda) | ±52 | **68.43** | ✅ Naik 16 poin |
+| Tumbler vs Rokok (beda total) | Belum diukur | **1.93** | ✅ Sangat rendah |
+
+**Di halaman Pencocokan:**
+- Rokok vs Rokok Humer: **100%** (foto identik + teks cocok)
+- Tumbler: **83.96%**
+- Rokok lain: **82.84%**
+- Pasangan beda total: **Tidak muncul** ✅
+
+### ⚠️ Keterbatasan yang Perlu Diketahui
+
+| No | Keterbatasan | Dampak |
+|----|--------------|--------|
+| 1 | **Kalibrasi dari 2 titik data** | Barang beda tapi mirip (dua botol biru) bisa lolos |
+| 2 | **Sudut sangat ekstrem** | Bisa jatuh di bawah 0.55 → skor 0 |
+| 3 | **Target 80-90% untuk foto saja belum tercapai** | Sekarang 68%, skor akhir tinggi dibantu teks |
+| 4 | **Skor 100% di rokok** | Wajar karena foto identik + teks cocok |
+
+### 🎯 Saran Lanjutan
+
+| No | Saran | Prioritas |
+|----|-------|-----------|
+| 1 | Uji lebih banyak pasangan (**barang beda tapi mirip**) | 🔴 Tinggi |
+| 2 | Jalankan `App\Models\MatchResult::truncate();` setiap kali algoritma diubah | 🔴 Tinggi |
+| 3 | Samakan aturan skor teks antara `MatchingPageController`, `MatchingController`, dan `NotificationHelper` | 🟡 Sedang |
+
+### 📋 File yang Diubah
+
+| No | File | Perubahan |
+|----|------|-----------|
+| 1 | `multiverse/python/image_matcher/main.py` | ⭐ Ditulis ulang total |
+| 2 | `multiverse/python/models/mobilenetv2-10.onnx` | ⭐ File model baru |
+| 3 | `app/Http/Controllers/MatchingPageController.php` | Skala skor teks ke 0-100 |
+| 4 | `app/Services/ImageMatchingService.php` | Tambah `orb_score`, timeout 20s |
+| 5 | `app/Helpers/NotificationHelper.php` | Sinonim per kata utuh (opsional) |
+
+### 📊 Status Proyek Terkini
+
+| Fase | Status | Persentase |
+|------|--------|------------|
+| Fase 1: Fondasi | ✅ Selesai | 100% |
+| Fase 2: Admin & Verifikasi | ✅ Selesai | 100% |
+| Fase 3: Notifikasi & Klaim | ✅ Selesai | 100% |
+| Fase 4: AI Feature Matching (Text) | ✅ Selesai | 100% |
+| Fase 5: Multi-Wilayah | ✅ Selesai | 100% |
+| Fase 6: Peta Interaktif | ✅ Selesai | 100% |
+| **Fase 7: AI Photo Matching v2 (CNN)** | ✅ **Selesai** | **95%** |
+| Fase 8: Fitur Lanjutan (Export, dll) | 📅 Rencana | 0% |
+| **TOTAL** | | **± 92%** |
+
+### 🧪 Cara Test AI Photo Matching
+
+**Mode Terminal (Python):**
+```bash
+cd multiverse/python
+venv\Scripts\Activate
+python image_matcher/main.py foto1.jpg foto2.jpg
+Mode Web (Laravel):
+
+Buka halaman detail laporan
+
+Klik "Cari Kecocokan"
+
+Lihat skor kemiripan di modal
+
+🔑 Catatan Teknis
+Model: MobileNetV2 ONNX (mobilenetv2-10.onnx, 13.3 MB)
+
+Input: Gambar 224×224 piksel, 3 channel RGB
+
+Output: Feature vector 1000 dimensi
+
+Metode: Cosine similarity
+
+Kalibrasi: 0.55 → 0 poin, 0.90 → 100 poin
+
+Bobot: CNN 60% + CV klasik 40%
+
+Fallback: Jika CNN gagal → pakai CV klasik saja
+
 ## 📋 Cara Menggunakan File Ini
 
 1. **Buka VS Code** di root proyek `temubarang`

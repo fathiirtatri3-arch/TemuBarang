@@ -8,7 +8,7 @@ class ImageMatchingService
 {
     private string $pythonPath;
     private string $scriptPath;
-    private int $timeoutSeconds = 10;
+    private int $timeoutSeconds = 20;
 
     public function __construct()
     {
@@ -115,6 +115,7 @@ class ImageMatchingService
             'success'         => true,
             'photo_score'     => $result['photo_score'] ?? 0.0,
             'akaze_score'     => $result['akaze_score'] ?? 0.0,
+            'orb_score'       => $result['orb_score'] ?? 0.0,
             'histogram_score' => $result['histogram_score'] ?? 0.0,
             'hog_score'       => $result['hog_score'] ?? 0.0,
             'total_matches'   => $result['total_matches'] ?? 0,
