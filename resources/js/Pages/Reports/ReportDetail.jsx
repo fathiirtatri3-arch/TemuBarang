@@ -60,7 +60,7 @@ export default function ReportDetail() {
         });
     };
 
-    const handleClaim = async (targetReportId, itemName) => {
+    const handleClaim = async (targetReportId, itemName, lostReportId = null) => {
         const confirmMsg = itemName
             ? `Anda yakin ingin mengklaim "${itemName}"? Admin akan memproses permintaan Anda.`
             : 'Anda yakin ingin mengklaim barang ini? Admin akan memproses permintaan Anda.';
@@ -70,7 +70,9 @@ export default function ReportDetail() {
             try {
                 const response = await fetch(`/claims/${targetReportId}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content },
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content },
+                    credentials: 'include',
+                    body: JSON.stringify({ lost_report_id: lostReportId }),
                 });
                 const data = await response.json();
                 if (response.ok) {
@@ -307,7 +309,7 @@ export default function ReportDetail() {
                                 {/* Action buttons */}
                                 <div className="space-y-2 pt-1">
                                     {/* Cari Kecocokan */}
-                                    {isLost && report.status !== 'resolved' && (
+                                    {isLost && (isOwner || isAdmin) && report.status !== 'resolved' && (
                                         <button
                                             onClick={checkMatching}
                                             disabled={loadingMatch}
@@ -505,13 +507,15 @@ export default function ReportDetail() {
 
                                             {/* Tombol aksi per-item */}
                                             <div className="mt-4 pt-4 border-t border-gray-200/60 flex flex-col sm:flex-row-reverse gap-2">
-                                                <button
-                                                    onClick={() => handleClaim(match.id, match.item_name)}
-                                                    disabled={claimLoading}
-                                                    className="flex-1 sm:flex-none px-5 py-2 bg-[#185FA5] text-white font-bold text-xs rounded-xl shadow-sm hover:bg-[#134d87] hover:shadow-md transition-all active:scale-95 disabled:opacity-50"
-                                                >
-                                                    {claimLoading ? 'Memproses...' : 'Klaim Barang'}
-                                                </button>
+                                                {match.user_id !== user?.id && (
+                                                    <button
+                                                        onClick={() => handleClaim(match.id, match.item_name, report.id)}
+                                                        disabled={claimLoading}
+                                                        className="flex-1 sm:flex-none px-5 py-2 bg-[#185FA5] text-white font-bold text-xs rounded-xl shadow-sm hover:bg-[#134d87] hover:shadow-md transition-all active:scale-95 disabled:opacity-50"
+                                                    >
+                                                        {claimLoading ? 'Memproses...' : 'Klaim Barang'}
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => showToast('Baik, dilewati.', 'info')}
                                                     className="flex-1 sm:flex-none px-5 py-2 bg-white border border-gray-300 text-gray-600 font-bold text-xs rounded-xl hover:bg-gray-100 transition-all active:scale-95"
