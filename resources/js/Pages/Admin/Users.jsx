@@ -30,11 +30,26 @@ export default function Users() {
         }
     };
     
-    const getRoleBadge = (role) => {
-        if (role === 'admin') {
-            return { bg: 'bg-primary/10 text-primary', label: 'Admin' };
+    const getRoleLabel = (role) => {
+        switch(role) {
+            case 'super_admin': return 'Super Admin';
+            case 'admin_kelurahan': return 'Admin Kelurahan';
+            case 'admin': return 'Admin';
+            default: return 'Warga';
         }
-        return { bg: 'bg-tertiary-fixed/40 text-tertiary', label: 'Siswa' };
+    };
+
+    const getRoleBadge = (role) => {
+        switch(role) {
+            case 'super_admin': 
+                return { bg: 'bg-purple-100 text-purple-700', label: 'Super Admin' };
+            case 'admin_kelurahan': 
+                return { bg: 'bg-[#185FA5]/10 text-[#185FA5]', label: 'Admin Kelurahan' };
+            case 'admin': 
+                return { bg: 'bg-[#185FA5]/10 text-[#185FA5]', label: 'Admin' };
+            default: 
+                return { bg: 'bg-gray-100 text-gray-700', label: 'Warga' };
+        }
     };
     
     const getStatusBadge = (user) => {
@@ -61,18 +76,16 @@ export default function Users() {
         const matchesSearch = search === '' || 
             user.name.toLowerCase().includes(search.toLowerCase()) ||
             user.email.toLowerCase().includes(search.toLowerCase());
-        const matchesRole = roleFilter === 'all' || 
-            (roleFilter === 'admin' && user.role === 'admin') ||
-            (roleFilter === 'student' && user.role === 'student');
+        const matchesRole = roleFilter === 'all' || user.role === roleFilter;
         return matchesSearch && matchesRole;
     });
     
     // Stat cards
     const stats = {
         total: users.total || users.data.length,
-        admin: users.data.filter(u => u.role === 'admin').length,
-        student: users.data.filter(u => u.role === 'student').length,
-        staff: users.data.filter(u => u.role === 'staff').length || 0,
+        superAdmin: users.data.filter(u => u.role === 'super_admin').length,
+        adminKelurahan: users.data.filter(u => u.role === 'admin_kelurahan').length,
+        warga: users.data.filter(u => u.role === 'user').length,
     };
     
     return (
@@ -144,9 +157,9 @@ export default function Users() {
                                     className="bg-white border border-gray-200 rounded-lg text-sm font-medium px-4 py-2 pr-10 focus:ring-2 focus:ring-[#185FA5] appearance-none"
                                 >
                                     <option value="all">Semua Peran</option>
-                                    <option value="admin">Admin</option>
-                                    <option value="student">Siswa</option>
-                                    <option value="staff">Staf</option>
+                                    <option value="super_admin">Super Admin</option>
+                                    <option value="admin_kelurahan">Admin Kelurahan</option>
+                                    <option value="user">Warga</option>
                                 </select>
                                 <select
                                     value={statusFilter}
@@ -218,7 +231,7 @@ export default function Users() {
                                                     <td className="px-4 py-3 text-sm text-gray-600">{user.email}</td>
                                                     <td className="px-4 py-3">
                                                         <span className={`px-3 py-1 rounded-full text-xs font-bold ${badge.bg}`}>
-                                                            {badge.label}
+                                                            {getRoleLabel(user.role)}
                                                         </span>
                                                     </td>
                                                     <td className="px-4 py-3 text-sm text-gray-600">{formatDate(user.created_at)}</td>
@@ -237,24 +250,28 @@ export default function Users() {
                                                             >
                                                                 <span className="material-symbols-outlined text-sm">visibility</span>
                                                             </Link>
-                                                            {user.role === 'student' ? (
+                                                            {/* Tombol ubah role — hanya untuk user dan admin_kelurahan */}
+                                                            {user.role === 'user' && (
                                                                 <button
-                                                                    onClick={() => handleRoleChange(user.id, 'admin')}
+                                                                    onClick={() => handleRoleChange(user.id, 'admin_kelurahan')}
                                                                     className="p-2 text-[#185FA5] hover:bg-[#D4E3FF] rounded-lg transition-colors"
-                                                                    title="Jadikan Admin"
-                                                                >
-                                                                    <span className="material-symbols-outlined text-sm">switch_account</span>
-                                                                </button>
-                                                            ) : (
-                                                                <button
-                                                                    onClick={() => handleRoleChange(user.id, 'student')}
-                                                                    className="p-2 text-[#6F3800] hover:bg-[#FFDCC4] rounded-lg transition-colors"
-                                                                    title="Jadikan Siswa"
+                                                                    title="Jadikan Admin Kelurahan"
                                                                 >
                                                                     <span className="material-symbols-outlined text-sm">switch_account</span>
                                                                 </button>
                                                             )}
-                                                            {user.id !== 1 && (
+                                                            {user.role === 'admin_kelurahan' && (
+                                                                <button
+                                                                    onClick={() => handleRoleChange(user.id, 'user')}
+                                                                    className="p-2 text-[#6F3800] hover:bg-[#FFDCC4] rounded-lg transition-colors"
+                                                                    title="Jadikan Warga"
+                                                                >
+                                                                    <span className="material-symbols-outlined text-sm">switch_account</span>
+                                                                </button>
+                                                            )}
+
+                                                            {/* Tombol hapus — tidak bisa hapus Super Admin */}
+                                                            {user.role !== 'super_admin' && (
                                                                 <button
                                                                     onClick={() => handleDelete(user.id, user.name)}
                                                                     disabled={isDeleting}
