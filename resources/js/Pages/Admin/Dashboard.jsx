@@ -259,6 +259,15 @@ export default function AdminDashboard() {
         return { bg: 'bg-teal-100 text-teal-700', label: 'Ditemukan' };
     };
     
+    const getRoleLabel = (role) => {
+        switch(role) {
+            case 'super_admin': return 'Super Admin';
+            case 'admin_kelurahan': return 'Admin Kelurahan';
+            case 'admin': return 'Admin'; // fallback untuk role lama
+            default: return 'Warga';
+        }
+    };
+
     return (
         <AuthenticatedLayout>
             {/* Toast Notification */}
@@ -305,7 +314,7 @@ export default function AdminDashboard() {
                     {/* Header */}
                     <div className="mb-6">
                         <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Verifikasi Laporan</h2>
-                        <p className="text-gray-500 text-sm">Kelola dan verifikasi temuan barang di lingkungan sekolah SMKN 2 Surabaya.</p>
+                        <p className="text-gray-500 text-sm">Kelola dan verifikasi temuan barang di lingkungan Kecamatan Sambikerep.</p>
                     </div>
                     
                     {/* Stats Grid - 6 Cards */}
@@ -574,7 +583,7 @@ export default function AdminDashboard() {
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         <p className="text-sm font-medium text-gray-700">{report.user?.name || '-'}</p>
-                                                        <p className="text-xs text-gray-400">{report.user?.role === 'admin' ? 'Admin' : 'Siswa'}</p>
+                                                        <p className="text-xs text-gray-400">{getRoleLabel(report.user?.role)}</p>
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         <div className="flex flex-col gap-0.5">

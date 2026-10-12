@@ -13,6 +13,8 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $query = User::query();
+
+        $query->where('id', '!=', auth()->id());
         
         // Search
         if ($request->has('search') && !empty($request->search)) {
@@ -34,7 +36,8 @@ class UserController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $user->role,
-                    'created_at' => $user->created_at->diffForHumans(),
+                    'created_at' => $user->created_at->toISOString(),
+                    'created_at_human' => $user->created_at->diffForHumans(),
                     'report_count' => $user->reports()->count(),
                 ];
             });
@@ -71,7 +74,7 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         
         $request->validate([
-            'role' => 'required|in:student,admin',
+            'role' => 'required|in:user,admin_kelurahan,super_admin',
         ]);
         
         // Jangan biarkan admin mengubah role sendiri
