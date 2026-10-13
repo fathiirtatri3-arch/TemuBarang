@@ -33,11 +33,27 @@ export default function UserDetail() {
         }
     };
     
-    const getRoleBadge = (role) => {
-        if (role === 'admin') {
-            return { bg: 'bg-primary/10 text-primary', label: 'Admin' };
+    // ⭐ Fungsi helper role (khusus admin)
+    const getRoleLabel = (role) => {
+        switch(role) {
+            case 'super_admin': return 'Super Admin';
+            case 'admin_kelurahan': return 'Admin Kelurahan';
+            case 'admin': return 'Admin';
+            default: return 'Warga';
         }
-        return { bg: 'bg-tertiary-fixed/40 text-tertiary', label: 'Siswa' };
+    };
+
+    const getRoleBadge = (role) => {
+        switch(role) {
+            case 'super_admin': 
+                return { bg: 'bg-purple-100 text-purple-700', label: 'Super Admin' };
+            case 'admin_kelurahan': 
+                return { bg: 'bg-blue-100 text-blue-700', label: 'Admin Kelurahan' };
+            case 'admin': 
+                return { bg: 'bg-blue-100 text-blue-700', label: 'Admin' };
+            default: 
+                return { bg: 'bg-green-100 text-green-700', label: 'Warga' };
+        }
     };
     
     const roleBadge = getRoleBadge(user.role);
@@ -100,9 +116,11 @@ export default function UserDetail() {
                                 </span>
                             </div>
                             <p className="text-sm opacity-80 pt-2 max-w-lg">
-                                {user.role === 'admin' 
-                                    ? 'Mengelola sistem TemuBarang dan membantu proses verifikasi barang temuan.' 
-                                    : 'Siswa aktif SMKN 2 Surabaya yang menggunakan sistem TemuBarang.'}
+                                {user.role === 'super_admin' 
+                                    ? 'Super Admin yang mengelola seluruh sistem TemuBarang Kecamatan Sambikerep.' 
+                                    : user.role === 'admin_kelurahan' 
+                                        ? 'Admin Kelurahan yang membantu verifikasi laporan di wilayahnya.' 
+                                        : 'Warga Kecamatan Sambikerep yang menggunakan sistem TemuBarang.'}
                             </p>
                         </div>
                     </section>
@@ -288,9 +306,11 @@ export default function UserDetail() {
                                     <div className="space-y-1">
                                         <p className="text-sm font-semibold text-[#185FA5]">Informasi Penting</p>
                                         <p className="text-xs text-gray-600 leading-relaxed">
-                                            {user.role === 'admin' 
-                                                ? 'Sebagai Admin, Anda bertanggung jawab atas verifikasi laporan dan pengelolaan data pengguna.' 
-                                                : 'Pastikan data laporan yang Anda kirimkan akurat untuk mempermudah proses verifikasi.'}
+                                            {user.role === 'super_admin' 
+                                                ? 'Sebagai Super Admin, Anda bertanggung jawab atas seluruh sistem dan pengelolaan data pengguna.' 
+                                                : user.role === 'admin_kelurahan' 
+                                                    ? 'Sebagai Admin Kelurahan, Anda bertanggung jawab atas verifikasi laporan di wilayah Anda.' 
+                                                    : 'Pastikan data laporan yang Anda kirimkan akurat untuk mempermudah proses verifikasi.'}
                                         </p>
                                     </div>
                                 </div>

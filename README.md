@@ -1214,6 +1214,117 @@ MatchingController (tombol Cari Kecocokan)
 
 Risiko: Kalau salah satu diubah, selisih skor bisa muncul lagi.
 
+## 📌 Update Progres Terbaru (Oktober 2026) — Alur Klaim Berbasis Laporan Hilang
+
+> **Catatan:** Bagian ini adalah catatan progres terbaru setelah README utama dibuat. Tidak mengubah bagian atas, hanya menambahkan update.
+
+### 🎯 Tujuan Update
+
+Admin harus bisa membandingkan **barang temuan yang diklaim** dengan **laporan barang hilang milik pengklaim** langsung dari halaman detail klaim. Sebelumnya, tombol "Lihat Barang Hilang" selalu nonaktif karena klaim tidak membawa informasi laporan hilang mana yang dituju. Update ini membuat setiap klaim **wajib terhubung ke satu laporan hilang** milik pengklaim.
+
+### 🐛 Bug yang Ditemukan
+
+| No | Gejala | Penyebab |
+|----|--------|----------|
+| 1 | Tombol "Lihat Barang Hilang Pengklaim" selalu abu-abu ("Tidak Ada Laporan Hilang Terkait") | Kolom `claims.lost_report_id` bernilai `NULL` |
+| 2 | `lost_report_id` kosong saat klaim lewat tombol **"📦 Klaim Barang Ini"** | `handleClaim()` dipanggil tanpa argumen `lostReportId` |
+| 3 | `lost_report_id` kosong saat klaim dari halaman **Pencocokan** | Tombol "Lihat Detail" hanya membawa ID laporan temuan, ID laporan hilang user tidak ikut terbawa |
+| 4 | Controller tidak mengirim data laporan hilang ke halaman admin | `ClaimController@show` hanya me-load `report`, `claimant`, `owner`, `verifier` |
+
+### 🔧 Perbaikan yang Dilakukan
+
+#### 1. Halaman Detail Klaim Admin (`ClaimDetail.jsx`)
+
+- ✅ Section **"Aksi Cepat"** di kartu Informasi Pengklaim:
+  - **Lihat Profil Pengklaim** → `/admin/users/{id}`
+  - **Lihat Barang Hilang Pengklaim** → `/reports/{lost_report_id}` (menampilkan foto kecil dan nama barang hilang)
+- ✅ Fallback: jika tidak ada laporan hilang terkait, tombol tampil nonaktif dengan pesan
+- ✅ Perbaikan typo class `text-[#185FA5]` pada ikon "Verifikasi Klaim"
+
+#### 2. Relasi & Controller Klaim
+
+| File | Perubahan |
+|------|-----------|
+| `app/Models/Claim.php` | Tambah relasi `lostReport()` → `belongsTo(Report::class, 'lost_report_id')` |
+| `app/Http/Controllers/ClaimController.php` → `show()` | Load relasi `lostReport` dan kirim sebagai prop `lostReport` ke `Admin/ClaimDetail` |
+| `app/Http/Controllers/ClaimController.php` → `store()` | **Wajib** `lost_report_id`. Divalidasi di server: harus milik user yang klaim, bertipe `lost`, dan statusnya bukan `resolved`/`rejected`. Jika tidak valid → HTTP 422 |
+
+#### 3. Halaman Pencocokan (`MatchesList.jsx`)
+
+Tombol **Lihat Detail** sekarang membawa ID laporan hilang user ke halaman laporan temuan:
+
+```
+/reports/{ID_LAPORAN_TEMUAN}?lost_report_id={ID_LAPORAN_HILANG_USER}
+```
+
+Hanya berlaku jika `user_report_type === 'lost'` dan `matched_report_type === 'found'`.
+
+#### 4. Alur Klaim Baru: Popup Pilih Laporan Hilang
+
+Tombol hijau **"📦 Klaim Barang Ini"** di detail laporan temuan tidak lagi langsung mengirim klaim. Sekarang alurnya:
+
+```
+Klik "Klaim Barang Ini"
+        ↓
+Popup: daftar laporan HILANG milik user sendiri
+        ↓
+User memilih 1 laporan hilang
+        ↓
+Klik "Kirim Klaim" → klaim tersimpan dengan lost_report_id
+        ↓
+Admin melihat laporan hilang tersebut di halaman detail klaim
+```
+
+| File | Perubahan |
+|------|-----------|
+| `routes/web.php` → `/reports/{id}` | Kirim prop `myLostReports` (laporan hilang milik user login yang belum `resolved`/`rejected`) |
+| `ReportDetail.jsx` | State `showClaimModal` dan `selectedLostId`, fungsi `openClaimModal()` dan `submitClaim()`, serta komponen modal pilihan laporan hilang |
+
+**Perilaku modal:**
+- Jika user datang dari halaman Pencocokan (`?lost_report_id=XX`), laporan yang cocok langsung **terpilih otomatis**
+- Tombol "Kirim Klaim" nonaktif sampai satu laporan dipilih
+- Jika user belum punya laporan hilang, popup menampilkan ajakan **"Buat Laporan Hilang"**
+
+### 🗄️ Perubahan Struktur Tabel `claims`
+
+| Kolom | Tipe | Keterangan |
+|-------|------|------------|
+| lost_report_id | bigint (nullable) | FK ke `reports` — laporan **HILANG** milik pengklaim yang dirujuk saat klaim. Untuk klaim baru kini selalu terisi |
+
+### 🔄 Alur Klaim (Diperbarui)
+
+```
+1. User A punya laporan hilang (status verified)
+2. User A membuka detail laporan temuan milik User B
+   (dari Cari Barang, Pencocokan, atau Cari Kecocokan)
+3. User A klik "Klaim Barang Ini" → popup pilih laporan hilang
+4. User A memilih laporannya → klaim "pending" + lost_report_id tersimpan
+5. Admin membuka detail klaim → bisa membuka:
+   • Profil pengklaim
+   • Detail laporan hilang pengklaim (untuk dibandingkan dengan barang temuan)
+6. Admin setujui / tolak
+7. Jika disetujui → laporan temuan dan laporan hilang yang dirujuk → "resolved"
+```
+
+### 📋 File yang Diubah
+
+| No | File | Perubahan |
+|----|------|-----------|
+| 1 | `resources/js/Pages/Admin/ClaimDetail.jsx` | Aksi Cepat, tombol laporan hilang, perbaikan typo |
+| 2 | `app/Models/Claim.php` | Relasi `lostReport()` |
+| 3 | `app/Http/Controllers/ClaimController.php` | `show()` kirim `lostReport`, `store()` wajib `lost_report_id` |
+| 4 | `resources/js/Pages/Matching/MatchesList.jsx` | Link "Lihat Detail" membawa `?lost_report_id=` |
+| 5 | `routes/web.php` | Route `/reports/{id}` mengirim `myLostReports` |
+| 6 | `resources/js/Pages/Reports/ReportDetail.jsx` | Modal pilih laporan hilang saat klaim |
+
+### ⚠️ Catatan Teknis
+
+| No | Catatan | Dampak |
+|----|---------|--------|
+| 1 | Klaim lama yang dibuat sebelum update ini bisa punya `lost_report_id = NULL` | Tombol "Lihat Barang Hilang" tampil nonaktif. Bisa diisi manual lewat Tinker: `Claim::find(ID)->update(['lost_report_id' => ID_LAPORAN])` |
+| 2 | Halaman **Cari Barang** (`SearchPage.jsx`) belum dicek jika punya tombol klaim sendiri | Jika ada, tombol itu perlu diarahkan ke detail laporan atau memakai modal yang sama, karena server kini menolak klaim tanpa `lost_report_id` |
+| 3 | Sempat dicoba deteksi otomatis laporan hilang yang paling mirip, tetapi **dibatalkan** | Konsep akhir: admin melihat laporan hilang yang **dipilih pengklaim**, bukan hasil tebakan sistem |
+
 ## 📋 Cara Menggunakan File Ini
 
 1. **Buka VS Code** di root proyek `temubarang`

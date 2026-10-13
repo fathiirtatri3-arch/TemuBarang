@@ -123,7 +123,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     Route::get('/reports/{id}', function ($id) {
         $report = \App\Models\Report::with(['user', 'region'])->findOrFail($id);
-        return Inertia::render('Reports/ReportDetail', ['report' => $report]);
+
+        // Laporan HILANG milik user yang sedang login (untuk pilihan saat klaim)
+        $myLostReports = \App\Models\Report::where('user_id', auth()->id())
+            ->where('type', 'lost')
+            ->whereNotIn('status', ['resolved', 'rejected'])
+            ->latest()
+            ->get(['id', 'item_name', 'category', 'color', 'location', 'date', 'photo', 'status']);
+
+        return Inertia::render('Reports/ReportDetail', [
+            'report' => $report,
+            'myLostReports' => $myLostReports,
+        ]);
     })->name('reports.show');
     
     Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');

@@ -222,11 +222,18 @@ export default function SearchPage() {
                 <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
                     
                     {/* Header */}
-                    <header className="mb-6">
-                        <h2 className="text-2xl md:text-3xl font-extrabold text-[#185FA5] tracking-tight">Cari Barang Temuan &amp; Hilang</h2>
-                        <p className="text-gray-500 text-sm max-w-2xl mt-1">
-                            Gunakan pencarian cerdas kami untuk menemukan kembali barang berharga Anda yang hilang di lingkungan Kecamatan Sambikerep.
-                        </p>
+                    <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-2xl bg-white shadow-lg border border-[#185FA5]/10 flex items-center justify-center">
+                                <span className="material-symbols-outlined text-3xl text-[#185FA5]" style={{ fontVariationSettings: '"FILL" 1' }}>search</span>
+                            </div>
+                            <div>
+                                <h1 className="text-2xl md:text-3xl font-extrabold text-[#185FA5]">Cari Barang Temuan &amp; Hilang</h1>
+                                <p className="text-gray-500 text-sm max-w-2xl">
+                                    Gunakan pencarian cerdas kami untuk menemukan kembali barang berharga Anda yang hilang di lingkungan Kecamatan Sambikerep.
+                                </p>
+                            </div>
+                        </div>
                     </header>
                     
                     {/* Prominent Search Bar */}

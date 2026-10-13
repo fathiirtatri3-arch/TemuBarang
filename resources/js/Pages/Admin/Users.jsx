@@ -105,6 +105,7 @@ export default function Users() {
                     
                     {/* Stats Cards */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        {/* Card 1: Total Pengguna */}
                         <div className="bg-white p-5 rounded-2xl border border-gray-200 hover:shadow-xl transition-all duration-300">
                             <div className="flex justify-between items-start mb-3">
                                 <div className="bg-[#D4E3FF] p-3 rounded-xl">
@@ -115,33 +116,38 @@ export default function Users() {
                             <p className="text-xs text-gray-500">Total Pengguna</p>
                             <h3 className="text-3xl font-extrabold text-gray-900">{stats.total}</h3>
                         </div>
+
+                        {/* Card 2: Super Admin */}
                         <div className="bg-white p-5 rounded-2xl border border-gray-200 hover:shadow-xl transition-all duration-300">
                             <div className="flex justify-between items-start mb-3">
-                                <div className="bg-[#E0E3E5] p-3 rounded-xl">
-                                    <span className="material-symbols-outlined text-[#444749]">admin_panel_settings</span>
+                                <div className="bg-purple-100 p-3 rounded-xl">
+                                    <span className="material-symbols-outlined text-purple-700">admin_panel_settings</span>
                                 </div>
                             </div>
-                            <p className="text-xs text-gray-500">Admin</p>
-                            <h3 className="text-3xl font-extrabold text-gray-900">{stats.admin}</h3>
+                            <p className="text-xs text-gray-500">Super Admin</p>
+                            <h3 className="text-3xl font-extrabold text-gray-900">{stats.superAdmin}</h3>
                         </div>
+
+                        {/* Card 3: Admin Kelurahan */}
                         <div className="bg-white p-5 rounded-2xl border border-gray-200 hover:shadow-xl transition-all duration-300">
                             <div className="flex justify-between items-start mb-3">
-                                <div className="bg-[#FFDCC4] p-3 rounded-xl">
-                                    <span className="material-symbols-outlined text-[#6F3800]">school</span>
+                                <div className="bg-[#D4E3FF] p-3 rounded-xl">
+                                    <span className="material-symbols-outlined text-[#185FA5]">location_city</span>
                                 </div>
-                                <span className="text-[#6F3800] font-bold text-xs bg-[#FFDCC4]/50 px-2 py-1 rounded-lg">+120</span>
                             </div>
-                            <p className="text-xs text-gray-500">Siswa</p>
-                            <h3 className="text-3xl font-extrabold text-gray-900">{stats.student}</h3>
+                            <p className="text-xs text-gray-500">Admin Kelurahan</p>
+                            <h3 className="text-3xl font-extrabold text-gray-900">{stats.adminKelurahan}</h3>
                         </div>
+
+                        {/* Card 4: Warga */}
                         <div className="bg-white p-5 rounded-2xl border border-gray-200 hover:shadow-xl transition-all duration-300">
                             <div className="flex justify-between items-start mb-3">
-                                <div className="bg-[#E7E8EE] p-3 rounded-xl">
-                                    <span className="material-symbols-outlined text-[#424751]">badge</span>
+                                <div className="bg-green-100 p-3 rounded-xl">
+                                    <span className="material-symbols-outlined text-green-700">person</span>
                                 </div>
                             </div>
-                            <p className="text-xs text-gray-500">Staf</p>
-                            <h3 className="text-3xl font-extrabold text-gray-900">{stats.staff}</h3>
+                            <p className="text-xs text-gray-500">Warga</p>
+                            <h3 className="text-3xl font-extrabold text-gray-900">{stats.warga}</h3>
                         </div>
                     </div>
                     
