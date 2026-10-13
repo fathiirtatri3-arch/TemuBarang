@@ -4,7 +4,7 @@ import { useState } from 'react';
 import PetaSambikerepView from '@/Components/GoogleMapView';
 
 export default function ReportDetail() {
-    const { report } = usePage().props;
+    const { report, myLostReports = [] } = usePage().props;
     const [showMatch, setShowMatch] = useState(false);
     const [matches, setMatches] = useState([]);
     const [loadingMatch, setLoadingMatch] = useState(false);
@@ -12,6 +12,13 @@ export default function ReportDetail() {
     const [toast, setToast] = useState({ show: false, message: '', type: '' });
     const [selectedImage, setSelectedImage] = useState(null);
     const [claimLoading, setClaimLoading] = useState(false);
+    const [showClaimModal, setShowClaimModal] = useState(false);
+    const [selectedLostId, setSelectedLostId] = useState(null);
+
+    // ID laporan hilang yang dibawa dari halaman Pencocokan (?lost_report_id=XX)
+    const lostReportIdFromUrl = typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('lost_report_id')
+        : null;
 
     const { auth } = usePage().props;
     const user = auth?.user;
@@ -86,6 +93,45 @@ export default function ReportDetail() {
             } finally {
                 setClaimLoading(false);
             }
+        }
+    };
+
+    const openClaimModal = () => {
+        // Kalau datang dari halaman Pencocokan (?lost_report_id=XX), langsung terpilih
+        const preselect = lostReportIdFromUrl ? Number(lostReportIdFromUrl) : null;
+        const valid = myLostReports.some((r) => r.id === preselect);
+        setSelectedLostId(valid ? preselect : null);
+        setShowClaimModal(true);
+    };
+
+    const submitClaim = async () => {
+        if (!selectedLostId) {
+            showToast('Pilih laporan barang hilang Anda terlebih dahulu', 'error');
+            return;
+        }
+        setClaimLoading(true);
+        try {
+            const response = await fetch(`/claims/${report.id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                },
+                credentials: 'include',
+                body: JSON.stringify({ lost_report_id: selectedLostId }),
+            });
+            const data = await response.json();
+            if (response.ok) {
+                showToast('Permintaan klaim berhasil dikirim!', 'success');
+                setShowClaimModal(false);
+            } else {
+                showToast(data.message || 'Gagal mengirim klaim', 'error');
+            }
+        } catch (error) {
+            showToast('Terjadi kesalahan', 'error');
+        } finally {
+            setClaimLoading(false);
         }
     };
 
@@ -326,7 +372,7 @@ export default function ReportDetail() {
                                     {/* Klaim */}
                                     {!isLost && !isOwner && report.status !== 'resolved' && (
                                         <button
-                                            onClick={() => handleClaim(report.id, report.item_name)}
+                                            onClick={openClaimModal}
                                             disabled={claimLoading}
                                             className="w-full py-2.5 bg-green-600 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-green-700 transition disabled:opacity-50"
                                         >
@@ -419,7 +465,108 @@ export default function ReportDetail() {
                 </div>
             </div>
 
-{/* Modal Hasil Pencocokan */}
+
+            {/* Modal Pilih Laporan Hilang untuk Klaim */}
+            {showClaimModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-start gap-3">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900">Klaim "{report.item_name}"</h3>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                    Pilih laporan barang hilang Anda yang ingin dikaitkan dengan klaim ini.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowClaimModal(false)}
+                                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 text-xl leading-none flex-shrink-0"
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <div className="p-6 overflow-y-auto space-y-3">
+                            {myLostReports.length === 0 ? (
+                                <div className="text-center py-6">
+                                    <div className="text-5xl mb-3">🔍</div>
+                                    <h4 className="font-bold text-gray-900 mb-1">Belum Ada Laporan Barang Hilang</h4>
+                                    <p className="text-gray-500 text-sm mb-4">
+                                        Untuk mengklaim barang, Anda harus punya laporan barang hilang terlebih dahulu.
+                                    </p>
+                                    <Link
+                                        href="/reports/create"
+                                        className="inline-block px-5 py-2.5 bg-[#185FA5] text-white rounded-xl font-bold text-sm hover:bg-[#134d87] transition"
+                                    >
+                                        Buat Laporan Hilang
+                                    </Link>
+                                </div>
+                            ) : (
+                                myLostReports.map((lost) => (
+                                    <button
+                                        key={lost.id}
+                                        type="button"
+                                        onClick={() => setSelectedLostId(lost.id)}
+                                        className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition ${
+                                            selectedLostId === lost.id
+                                                ? 'border-[#185FA5] bg-[#EAF1FF]'
+                                                : 'border-gray-200 bg-white hover:border-gray-300'
+                                        }`}
+                                    >
+                                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                            {lost.photo ? (
+                                                <img
+                                                    src={`/storage/${lost.photo}`}
+                                                    alt={lost.item_name}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-2xl">🔍</div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-bold text-sm text-gray-900 truncate">{lost.item_name}</p>
+                                            <p className="text-xs text-gray-500 truncate">
+                                                {lost.category || '-'} • {lost.color || '-'}
+                                            </p>
+                                            <p className="text-xs text-gray-400 truncate">
+                                                📍 {lost.location} • {formatDate(lost.date)}
+                                            </p>
+                                        </div>
+                                        <div
+                                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                                selectedLostId === lost.id ? 'border-[#185FA5] bg-[#185FA5]' : 'border-gray-300'
+                                            }`}
+                                        >
+                                            {selectedLostId === lost.id && <div className="w-2 h-2 rounded-full bg-white"></div>}
+                                        </div>
+                                    </button>
+                                ))
+                            )}
+                        </div>
+
+                        {myLostReports.length > 0 && (
+                            <div className="px-6 py-4 border-t border-gray-100 flex gap-3 justify-end">
+                                <button
+                                    onClick={() => setShowClaimModal(false)}
+                                    className="px-4 py-2 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition text-sm font-semibold"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    onClick={submitClaim}
+                                    disabled={claimLoading || !selectedLostId}
+                                    className="px-5 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition text-sm font-bold disabled:opacity-50"
+                                >
+                                    {claimLoading ? 'Memproses...' : 'Kirim Klaim'}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+
+            {/* Modal Hasil Pencocokan */}
             {showMatch && (
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden">

@@ -380,14 +380,19 @@ export default function ReportsList() {
                 <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
                     
                     {/* Header */}
-                    <header className="flex justify-between items-end mb-6">
-                        <div>
-                            <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">Semua Laporan</h1>
-                            <p className="text-gray-500 text-sm">Temukan barang hilang atau temuan di lingkungan Kecamatan Sambikerep</p>
+                    <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-2xl bg-white shadow-lg border border-[#185FA5]/10 flex items-center justify-center">
+                                <span className="material-symbols-outlined text-3xl text-[#185FA5]" style={{ fontVariationSettings: '"FILL" 1' }}>description</span>
+                            </div>
+                            <div>
+                                <h1 className="text-2xl md:text-3xl font-extrabold text-[#185FA5]">Semua Laporan</h1>
+                                <p className="text-gray-500 text-sm">Temukan barang hilang atau temuan di lingkungan Kecamatan Sambikerep</p>
+                            </div>
                         </div>
                         <Link 
                             href="/reports/create" 
-                            className="bg-blue-600 text-white px-5 py-3 rounded-xl font-semibold text-sm flex items-center gap-2 shadow-md hover:shadow-xl transition-all active:scale-95"
+                            className="bg-[#185FA5] text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg hover:shadow-[#185FA5]/20 transition-all active:scale-95"
                         >
                             <span className="material-symbols-outlined text-sm">add</span>
                             Lapor Sekarang

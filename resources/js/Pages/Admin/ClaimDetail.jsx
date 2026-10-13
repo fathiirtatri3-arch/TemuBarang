@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { usePage, router, Link } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PetaSambikerepView from '@/Components/GoogleMapView';
 
 export default function ClaimDetail() {
-    const { claim } = usePage().props;
+    const { claim, lostReport, lostReportSource, lostReportScore } = usePage().props;
     const [adminNote, setAdminNote] = useState('');
     const [processing, setProcessing] = useState(false);
     const [showVerifyModal, setShowVerifyModal] = useState(false);
@@ -52,6 +53,66 @@ export default function ClaimDetail() {
     };
     
     const statusBadge = getStatusBadge();
+
+    const getColorHex = (colorName) => {
+        if (!colorName) return '#CBD5E1'; // Abu-abu default
+        
+        const colorMap = {
+            // Warna dasar Indonesia
+            'merah': '#EF4444',
+            'biru': '#3B82F6',
+            'hijau': '#22C55E',
+            'kuning': '#EAB308',
+            'hitam': '#1F2937',
+            'putih': '#FFFFFF',
+            'abu': '#9CA3AF',
+            'abu-abu': '#9CA3AF',
+            'orange': '#F97316',
+            'oranye': '#F97316',
+            'ungu': '#A855F7',
+            'pink': '#EC4899',
+            'merah muda': '#F472B6',
+            'coklat': '#92400E',
+            'cokelat': '#92400E',
+            'emas': '#D4AF37',
+            'silver': '#C0C0C0',
+            'navy': '#1E3A8A',
+            'tosca': '#14B8A6',
+            'maroon': '#7F1D1D',
+            'magenta': '#D946EF',
+            'cyan': '#06B6D4',
+            'gold': '#D4AF37',
+            'brown': '#92400E',
+            'gray': '#9CA3AF',
+            'grey': '#9CA3AF',
+            'beige': '#F5F5DC',
+            'krem': '#FEF3C7',
+            'cream': '#FEF3C7',
+            'lavender': '#C4B5FD',
+            'mint': '#6EE7B7',
+            'olive': '#84CC16',
+            'teal': '#14B8A6',
+            'turquoise': '#40E0D0',
+            'violet': '#8B5CF6',
+        };
+        
+        const lowerColor = colorName.toLowerCase().trim();
+        
+        // Cek exact match dulu
+        if (colorMap[lowerColor]) {
+            return colorMap[lowerColor];
+        }
+        
+        // Cek partial match (misal: "biru metalic" → cari "biru")
+        for (const [key, value] of Object.entries(colorMap)) {
+            if (lowerColor.includes(key)) {
+                return value;
+            }
+        }
+        
+        // Fallback: kalau tidak ada mapping
+        return '#CBD5E1';
+    };
     
     return (
         <AuthenticatedLayout>
@@ -179,8 +240,14 @@ export default function ClaimDetail() {
                                     <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Warna</p>
                                     <div className="flex items-center gap-3 mt-1">
                                         {claim.report?.color && (
-                                            <div className="w-6 h-6 rounded-full border border-gray-200 shadow-inner" 
-                                                 style={{ backgroundColor: claim.report.color.toLowerCase() }}></div>
+                                            <div 
+                                                className="w-6 h-6 rounded-full border border-gray-300 shadow-inner flex-shrink-0" 
+                                                style={{ 
+                                                    backgroundColor: getColorHex(claim.report.color),
+                                                    boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)'
+                                                }}
+                                                title={claim.report.color}
+                                            ></div>
                                         )}
                                         <p className="text-lg font-bold text-gray-900">{claim.report?.color || '-'}</p>
                                     </div>
@@ -201,6 +268,16 @@ export default function ClaimDetail() {
                                         )}
                                     </div>
                                 </div>
+                                <div className="col-span-1 md:col-span-2 lg:col-span-3">
+                                    <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-2">
+                                        📍 Titik Lokasi di Peta
+                                    </p>
+                                    <PetaSambikerepView
+                                        latitude={claim.report?.latitude}
+                                        longitude={claim.report?.longitude}
+                                        itemName={claim.report?.item_name}
+                                    />
+                                </div>
                             </div>
                         </div>
                         
@@ -214,6 +291,7 @@ export default function ClaimDetail() {
                                     <h3 className="text-lg font-bold text-gray-900">Informasi Pengklaim</h3>
                                 </div>
                                 <div className="space-y-5">
+                                    {/* Nama */}
                                     <div className="flex items-start gap-4">
                                         <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
                                             <span className="material-symbols-outlined text-gray-500">account_circle</span>
@@ -223,6 +301,8 @@ export default function ClaimDetail() {
                                             <p className="text-base font-bold text-gray-900">{claim.claimant?.name}</p>
                                         </div>
                                     </div>
+                                    
+                                    {/* Email */}
                                     <div className="flex items-start gap-4">
                                         <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
                                             <span className="material-symbols-outlined text-gray-500">mail</span>
@@ -232,6 +312,8 @@ export default function ClaimDetail() {
                                             <p className="text-base font-bold text-gray-900">{claim.claimant?.email}</p>
                                         </div>
                                     </div>
+                                    
+                                    {/* Tanggal Klaim */}
                                     <div className="flex items-start gap-4">
                                         <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
                                             <span className="material-symbols-outlined text-gray-500">event</span>
@@ -241,11 +323,71 @@ export default function ClaimDetail() {
                                             <p className="text-base font-bold text-gray-900">{formatDate(claim.created_at)}</p>
                                         </div>
                                     </div>
+                                    
+                                    {/* Pesan Klaim */}
                                     {claim.message && (
                                         <div className="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200 mt-2">
                                             <p className="text-sm italic text-gray-600">"{claim.message}"</p>
                                         </div>
                                     )}
+                                    
+                                    {/* ⭐ TOMBOL AKSI - TAMBAHAN BARU ⭐ */}
+                                    <div className="pt-4 border-t border-gray-100 space-y-2">
+                                        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-3">Aksi Cepat</p>
+                                        
+                                        {/* Tombol Lihat Profil */}
+                                        <Link
+                                            href={`/admin/users/${claim.claimant?.id}`}
+                                            className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-[#EAF1FF] text-[#185FA5] rounded-xl hover:bg-[#185FA5] hover:text-white transition-all group"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <span className="material-symbols-outlined text-lg">person_search</span>
+                                                <span className="font-bold text-sm">Lihat Profil Pengklaim</span>
+                                            </div>
+                                            <span className="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                                        </Link>
+                                        
+                                        {/* Tombol Lihat Barang Hilang */}
+                                        {lostReport ? (
+                                            <Link
+                                                href={`/reports/${lostReport.id}`}
+                                                className="w-full flex items-center gap-3 p-3 bg-red-50 text-red-700 rounded-xl hover:bg-red-600 hover:text-white transition-all group"
+                                            >
+                                                <div className="w-12 h-12 rounded-lg overflow-hidden bg-white/60 flex-shrink-0 border border-red-100">
+                                                    {lostReport.photo ? (
+                                                        <img
+                                                            src={`/storage/${lostReport.photo}`}
+                                                            alt={lostReport.item_name}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center">
+                                                            <span className="material-symbols-outlined text-lg">search</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[10px] uppercase tracking-wider font-bold opacity-70">
+                                                        Lihat Barang Hilang Pengklaim
+                                                    </p>
+                                                    <p className="font-bold text-sm truncate">{lostReport.item_name}</p>
+                                                    <p className="text-[11px] opacity-80">
+                                                        {lostReportSource === 'auto'
+                                                            ? `Terdeteksi otomatis${lostReportScore ? ` • kemiripan ${lostReportScore}%` : ''}`
+                                                            : 'Dipilih pengklaim saat klaim'}
+                                                    </p>
+                                                </div>
+                                                <span className="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                                            </Link>
+                                        ) : (
+                                            <div className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-gray-50 text-gray-400 rounded-xl cursor-not-allowed border border-dashed border-gray-200">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="material-symbols-outlined text-lg">link_off</span>
+                                                    <span className="font-bold text-sm">Tidak Ada Laporan Hilang Terkait</span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             
@@ -293,7 +435,7 @@ export default function ClaimDetail() {
                         {claim.status === 'pending' && (
                             <div className="bg-gray-50 border-t-4 border-[#185FA5] rounded-2xl p-6 shadow-sm mt-2">
                                 <div className="flex items-center gap-2 mb-6">
-                                    <span className="material-symbols-outlined text-[#185FA5">task_alt</span>
+                                    <span className="material-symbols-outlined text-[#185FA5]">task_alt</span>
                                     <h3 className="text-lg font-bold text-gray-900">Verifikasi Klaim</h3>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

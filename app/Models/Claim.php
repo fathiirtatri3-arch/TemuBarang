@@ -44,4 +44,9 @@ class Claim extends Model
     {
         return $this->belongsTo(User::class, 'verified_by');
     }
+
+    public function lostReport()
+    {
+        return $this->belongsTo(Report::class, 'lost_report_id');
+    }
 }

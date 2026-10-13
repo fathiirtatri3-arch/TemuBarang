@@ -233,7 +233,11 @@ export default function MatchesList() {
                                             Abaikan
                                         </button>
                                         <Link
-                                            href={`/reports/${match.matched_report_id}`}
+                                            href={
+                                                match.user_report_type === 'lost' && match.matched_report_type === 'found'
+                                                    ? `/reports/${match.matched_report_id}?lost_report_id=${match.user_report_id}`
+                                                    : `/reports/${match.matched_report_id}`
+                                            }
                                             className="flex-[2] py-2.5 bg-[#185FA5] text-white font-bold rounded-xl hover:bg-[#0C447C] transition-all shadow-md text-sm flex items-center justify-center gap-1"
                                         >
                                             <span className="material-symbols-outlined text-sm">visibility</span>
