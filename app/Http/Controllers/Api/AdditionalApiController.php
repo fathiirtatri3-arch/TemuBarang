@@ -31,6 +31,7 @@ class AdditionalApiController extends Controller
             'Perhiasan & Aksesoris',
             'Kendaraan & Aksesoris',
             'Anak & Bayi',
+            'Uang',
             'Lainnya',
         ];
 
@@ -50,7 +51,9 @@ class AdditionalApiController extends Controller
         }
 
         // Ambil semua laporan milik user
-        $userReports = Report::where('user_id', $user->id)->get();
+        $userReports = Report::where('user_id', $user->id)
+            ->where('status', 'verified')
+            ->get();
         
         $recommendations = [];
         
@@ -59,7 +62,8 @@ class AdditionalApiController extends Controller
             $oppositeType = $userReport->type === 'lost' ? 'found' : 'lost';
             
             $potentialMatches = Report::where('type', $oppositeType)
-                ->where('id', '!=', $userReport->id)
+                ->where('status', 'verified')
+                ->where('user_id', '!=', $user->id)
                 ->get();
             
             foreach ($potentialMatches as $match) {

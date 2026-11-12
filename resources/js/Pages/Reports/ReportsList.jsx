@@ -106,6 +106,10 @@ export default function ReportsList() {
                 return { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Terverifikasi' };
             case 'resolved':
                 return { bg: 'bg-green-100', text: 'text-green-800', label: 'Selesai' };
+            case 'matched':
+                return { bg: 'bg-purple-100', text: 'text-purple-800', label: 'Serah Terima' };
+            case 'rejected':
+                return { bg: 'bg-red-100', text: 'text-red-800', label: 'Ditolak' };
             default:
                 return { bg: 'bg-gray-100', text: 'text-gray-800', label: status };
         }
@@ -464,6 +468,8 @@ export default function ReportsList() {
                                         <option value="pending">Menunggu</option>
                                         <option value="verified">Terverifikasi</option>
                                         <option value="resolved">Selesai</option>
+                                        <option value="matched">Serah Terima</option>
+                                        <option value="rejected">Ditolak</option>
                                     </select>
                                     <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">expand_more</span>
                                 </div>
@@ -513,7 +519,7 @@ export default function ReportsList() {
                             )}
                             {statusFilter !== 'all' && (
                                 <span className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
-                                    {statusFilter === 'pending' ? '⏳ Menunggu' : statusFilter === 'verified' ? '✅ Terverifikasi' : '🎉 Selesai'}
+                                    {statusFilter === 'pending' ? '⏳ Menunggu' : statusFilter === 'verified' ? '✅ Terverifikasi' : statusFilter === 'matched' ? '🤝 Serah Terima' : statusFilter === 'rejected' ? '🚫 Ditolak' : '🎉 Selesai'}
                                     <button onClick={() => setStatusFilter('all')} className="hover:text-blue-900">×</button>
                                 </span>
                             )}

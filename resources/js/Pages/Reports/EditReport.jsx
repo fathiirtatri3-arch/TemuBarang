@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import PetaSambikerep from '@/Components/GoogleMap'; 
 
 export default function EditReport() {
-    const { report } = usePage().props;
+    const { report, secretFeature = '' } = usePage().props;
     const [categories, setCategories] = useState([]);
     const [categoriesLoading, setCategoriesLoading] = useState(true);
     const [photoPreview, setPhotoPreview] = useState(null);
@@ -25,6 +25,7 @@ export default function EditReport() {
         region_id: report.region_id || '',
         latitude: report.latitude || '',
         longitude: report.longitude || '',
+        secret_feature: secretFeature || '',
         photo: null,
         _method: 'PUT',
     });
@@ -57,7 +58,7 @@ export default function EditReport() {
                 setCategories([
                     'Elektronik', 'Dokumen & Surat', 'Pakaian & Aksesoris', 'Alat Tulis',
                     'Perlengkapan Makan & Minum', 'Dompet & Tas', 'Kartu & Identitas', 'Kunci',
-                    'Perhiasan & Aksesoris', 'Kendaraan & Aksesoris', 'Anak & Bayi', 'Lainnya'
+                    'Perhiasan & Aksesoris', 'Kendaraan & Aksesoris', 'Anak & Bayi', 'Uang', 'Lainnya'
                 ]);
             }
             } catch (error) {
@@ -65,7 +66,7 @@ export default function EditReport() {
                 setCategories([
                     'Elektronik', 'Dokumen & Surat', 'Pakaian & Aksesoris', 'Alat Tulis',
                     'Perlengkapan Makan & Minum', 'Dompet & Tas', 'Kartu & Identitas', 'Kunci',
-                    'Perhiasan & Aksesoris', 'Kendaraan & Aksesoris', 'Anak & Bayi', 'Lainnya'
+                    'Perhiasan & Aksesoris', 'Kendaraan & Aksesoris', 'Anak & Bayi', 'Uang', 'Lainnya'
                 ]);
             } finally {
                 setCategoriesLoading(false);
@@ -154,6 +155,7 @@ export default function EditReport() {
         formData.append('region_id', data.region_id);
         formData.append('latitude', data.latitude);
         formData.append('longitude', data.longitude);
+        formData.append('secret_feature', data.secret_feature || '');
         if (data.photo) {
             formData.append('photo', data.photo);
         }
@@ -174,6 +176,7 @@ export default function EditReport() {
                     errors.region_id ||
                     errors.latitude ||
                     errors.longitude ||
+                    errors.secret_feature ||
                     errors.photo ||
                     'Gagal memperbarui laporan. Cek kembali data Anda.',
                     'error'
@@ -438,6 +441,27 @@ export default function EditReport() {
                             {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
                         </div>
                         
+                        {/* Ciri Khusus Rahasia (hanya laporan temuan) */}
+                        {report.type === 'found' && (
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Ciri Khusus Rahasia</label>
+                                <textarea
+                                    value={data.secret_feature}
+                                    onChange={e => setData('secret_feature', e.target.value)}
+                                    className={`w-full border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
+                                        errors.secret_feature ? 'border-red-500' : 'border-gray-300'
+                                    }`}
+                                    rows="3"
+                                    maxLength="255"
+                                    placeholder="Contoh: wallpaper HP foto kucing, ada goresan di bagian dalam"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    🔒 Tidak ditampilkan ke publik. Hanya dilihat pemilik laporan dan admin kelurahan.
+                                </p>
+                                {errors.secret_feature && <p className="text-red-500 text-xs mt-1">{errors.secret_feature}</p>}
+                            </div>
+                        )}
+
                         {/* Foto Barang */}
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-1">Foto Barang (Opsional)</label>

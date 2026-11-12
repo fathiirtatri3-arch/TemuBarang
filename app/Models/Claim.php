@@ -19,10 +19,18 @@ class Claim extends Model
         'verified_at',
         'verified_by',
         'lost_report_id',
+        'claimant_proof',
+        'claimant_serial',
+        'handed_over_at',
+        'handed_over_by',
+        'receiver_name',
+        'receiver_id_type',
+        'handover_note',
     ];
 
     protected $casts = [
         'verified_at' => 'datetime',
+        'handed_over_at' => 'datetime',
     ];
 
     public function report()
@@ -48,5 +56,10 @@ class Claim extends Model
     public function lostReport()
     {
         return $this->belongsTo(Report::class, 'lost_report_id');
+    }
+
+    public function handedOverBy()
+    {
+        return $this->belongsTo(User::class, 'handed_over_by');
     }
 }
