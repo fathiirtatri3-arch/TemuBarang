@@ -4,7 +4,7 @@ import { useState } from 'react';
 import PetaSambikerepView from '@/Components/GoogleMapView';
 
 export default function ReportDetail() {
-    const { report, myLostReports = [] } = usePage().props;
+    const { report, myLostReports = [], canManage = false, secretFeature = null, requiresProof = false, rejectionReason = null, serialNumber = null } = usePage().props;
     const [showMatch, setShowMatch] = useState(false);
     const [matches, setMatches] = useState([]);
     const [loadingMatch, setLoadingMatch] = useState(false);
@@ -14,6 +14,10 @@ export default function ReportDetail() {
     const [claimLoading, setClaimLoading] = useState(false);
     const [showClaimModal, setShowClaimModal] = useState(false);
     const [selectedLostId, setSelectedLostId] = useState(null);
+    const [claimProof, setClaimProof] = useState('');
+    const [claimSerial, setClaimSerial] = useState('');
+    const [showReceiveModal, setShowReceiveModal] = useState(false);
+    const [serialInput, setSerialInput] = useState('');
 
     // ID laporan hilang yang dibawa dari halaman Pencocokan (?lost_report_id=XX)
     const lostReportIdFromUrl = typeof window !== 'undefined'
@@ -101,12 +105,22 @@ export default function ReportDetail() {
         const preselect = lostReportIdFromUrl ? Number(lostReportIdFromUrl) : null;
         const valid = myLostReports.some((r) => r.id === preselect);
         setSelectedLostId(valid ? preselect : null);
+        setClaimProof('');
+        setClaimSerial('');
         setShowClaimModal(true);
     };
 
     const submitClaim = async () => {
         if (!selectedLostId) {
             showToast('Pilih laporan barang hilang Anda terlebih dahulu', 'error');
+            return;
+        }
+        if (report.category === 'Elektronik' && claimSerial.trim().length < 5) {
+            showToast('Isi nomor seri/IMEI perangkat', 'error');
+            return;
+        }
+        if (requiresProof && claimProof.trim().length < 5) {
+            showToast('Sebutkan ciri khusus barang yang hanya Anda ketahui', 'error');
             return;
         }
         setClaimLoading(true);
@@ -119,7 +133,7 @@ export default function ReportDetail() {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
                 },
                 credentials: 'include',
-                body: JSON.stringify({ lost_report_id: selectedLostId }),
+                body: JSON.stringify({ lost_report_id: selectedLostId, claimant_proof: claimProof, claimant_serial: claimSerial }),
             });
             const data = await response.json();
             if (response.ok) {
@@ -135,11 +149,29 @@ export default function ReportDetail() {
         }
     };
 
+    const receiveItem = () => {
+        router.put(`/admin/reports/${report.id}/receive`, { serial_number: serialInput }, {
+            preserveScroll: true,
+            onSuccess: (page) => {
+                const f = page.props.flash || {};
+                showToast(f.error || f.success || 'Penerimaan barang dicatat', f.error ? 'error' : 'success');
+                if (!f.error) setShowReceiveModal(false);
+            },
+        });
+    };
+
+    // Pemilik/admin berwenang melihat foto asli; yang lain melihat versi buram
+    const photoSrc = report.has_original_photo && report.can_view_original
+        ? `/reports/${report.id}/photo-original`
+        : (report.photo ? `/storage/${report.photo}` : null);
+
     const isLost = report.type === 'lost';
     const statusConfig = {
         pending: { label: 'Sedang Dicari', bg: 'bg-red-100', text: 'text-red-700', dot: 'bg-red-500' },
         verified: { label: 'Terverifikasi', bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500' },
         resolved: { label: 'Selesai', bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-500' },
+        matched: { label: 'Serah Terima', bg: 'bg-purple-100', text: 'text-purple-700', dot: 'bg-purple-500' },
+        rejected: { label: 'Ditolak', bg: 'bg-red-100', text: 'text-red-700', dot: 'bg-red-500' },
     }[report.status] || { label: report.status, bg: 'bg-gray-100', text: 'text-gray-700', dot: 'bg-gray-400' };
 
     return (
@@ -154,6 +186,36 @@ export default function ReportDetail() {
                         <span className={`text-sm font-semibold ${toast.type === 'success' ? 'text-green-800' : toast.type === 'error' ? 'text-red-800' : 'text-blue-800'}`}>
                             {toast.message}
                         </span>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal: catat penerimaan barang elektronik (nomor seri/IMEI) */}
+            {showReceiveModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                        <h3 className="text-lg font-bold text-gray-900 mb-1">Catat Barang Diterima</h3>
+                        <p className="text-gray-500 text-sm mb-4">
+                            Baca nomor seri atau IMEI langsung dari <strong>fisik perangkat</strong> (bukan dari pengakuan penemu).
+                        </p>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                            Nomor seri / IMEI <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            value={serialInput}
+                            onChange={(e) => setSerialInput(e.target.value)}
+                            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-mono focus:ring-2 focus:ring-[#185FA5]"
+                            placeholder="Mis. IMEI 15 digit (tekan *#06#) atau nomor seri di bagian belakang"
+                        />
+                        <div className="flex gap-3 justify-end mt-5">
+                            <button onClick={() => setShowReceiveModal(false)} className="px-4 py-2 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition text-sm font-semibold">
+                                Batal
+                            </button>
+                            <button onClick={receiveItem} className="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition text-sm font-bold">
+                                Simpan Penerimaan
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -224,10 +286,10 @@ export default function ReportDetail() {
                             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                                 {/* Foto besar */}
                                 <div className="relative h-80 md:h-96 overflow-hidden bg-gray-100 group cursor-pointer"
-                                     onClick={() => report.photo && setSelectedImage(`/storage/${report.photo}`)}>
-                                    {report.photo ? (
+                                    onClick={() => photoSrc && setSelectedImage(photoSrc)}>
+                                    {photoSrc ? (
                                         <img
-                                            src={`/storage/${report.photo}`}
+                                            src={photoSrc}
                                             alt={report.item_name}
                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                         />
@@ -239,7 +301,7 @@ export default function ReportDetail() {
                                             </div>
                                         </div>
                                     )}
-                                    {report.photo && (
+                                    {photoSrc && (
                                         <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/40 to-transparent p-4">
                                             <p className="text-white text-xs opacity-80">Klik untuk memperbesar</p>
                                         </div>
@@ -266,6 +328,15 @@ export default function ReportDetail() {
                                             </span>
                                         )}
                                     </div>
+
+                                    {report.photo_sensitive && !(report.has_original_photo && report.can_view_original) && (
+                                        <div className="flex gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                            <span className="material-symbols-outlined text-slate-500 text-lg">visibility_off</span>
+                                            <p className="text-xs text-slate-600 leading-relaxed">
+                                                Foto disamarkan otomatis untuk melindungi data pribadi pemilik barang. Admin kelurahan melihat foto aslinya saat verifikasi.
+                                            </p>
+                                        </div>
+                                    )}
 
                                     <h2 className="text-2xl font-black text-gray-900">{report.item_name}</h2>
 
@@ -354,8 +425,15 @@ export default function ReportDetail() {
 
                                 {/* Action buttons */}
                                 <div className="space-y-2 pt-1">
+                                    {/* Info: laporan hilang belum diverifikasi */}
+                                    {isLost && canManage && report.status === 'pending' && (
+                                        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                                            Pencocokan bisa dilakukan setelah laporan ini diverifikasi admin kelurahan.
+                                        </p>
+                                    )}
+
                                     {/* Cari Kecocokan */}
-                                    {isLost && (isOwner || isAdmin) && report.status !== 'resolved' && (
+                                    {isLost && canManage && report.status === 'verified' && (
                                         <button
                                             onClick={checkMatching}
                                             disabled={loadingMatch}
@@ -370,7 +448,7 @@ export default function ReportDetail() {
                                     )}
 
                                     {/* Klaim */}
-                                    {!isLost && !isOwner && report.status !== 'resolved' && (
+                                    {!isLost && !isOwner && report.status === 'verified' && (
                                         <button
                                             onClick={openClaimModal}
                                             disabled={claimLoading}
@@ -381,7 +459,7 @@ export default function ReportDetail() {
                                     )}
 
                                     {/* Edit */}
-                                    {(isOwner || isAdmin) && report.status !== 'resolved' && (
+                                    {canManage && !['resolved', 'matched'].includes(report.status) && (
                                         <Link
                                             href={`/reports/${report.id}/edit`}
                                             className="w-full py-2.5 border border-gray-200 text-gray-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 transition"
@@ -392,7 +470,7 @@ export default function ReportDetail() {
                                     )}
 
                                     {/* Hapus */}
-                                    {(isOwner || isAdmin) && (
+                                    {canManage && (
                                         <button
                                             onClick={() => setShowDeleteModal(true)}
                                             className="w-full py-2.5 border border-red-200 text-red-600 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-red-50 transition"
@@ -403,6 +481,70 @@ export default function ReportDetail() {
                                     )}
                                 </div>
                             </div>
+
+                            {/* Alasan penolakan (pemilik & admin wilayah) */}
+                            {report.status === 'rejected' && canManage && (
+                                <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+                                    <p className="text-xs font-black text-red-700 uppercase tracking-wider mb-1">Laporan Ditolak</p>
+                                    <p className="text-sm text-red-800 break-words">{rejectionReason || 'Tidak ada alasan yang dicantumkan.'}</p>
+                                    {isOwner && (
+                                        <p className="text-xs text-red-600 mt-2">
+                                            Perbaiki laporan lewat tombol Edit, lalu laporan akan diajukan ulang untuk diverifikasi.
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Penyimpanan barang temuan + ciri rahasia */}                            {!isLost && (
+                                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
+                                    <p className="text-xs font-black text-gray-400 uppercase tracking-wider">Penyimpanan Barang</p>
+
+                                    {report.received_at ? (
+                                        <div className="flex gap-2.5 p-3 rounded-xl bg-green-50 border border-green-200">
+                                            <span className="material-symbols-outlined text-green-600 text-lg">inventory</span>
+                                            <p className="text-xs text-green-800 leading-relaxed">
+                                                Tersimpan di <strong>kantor {report.region?.name || 'kelurahan'}</strong> sejak {formatDate(report.received_at)}.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="flex gap-2.5 p-3 rounded-xl bg-amber-50 border border-amber-200">
+                                            <span className="material-symbols-outlined text-amber-600 text-lg">home_work</span>
+                                            <p className="text-xs text-amber-800 leading-relaxed">
+                                                Barang belum tercatat diterima di kantor {report.region?.name || 'kelurahan'}. Penemu diminta menyerahkan barang setelah laporan diverifikasi.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {isAdmin && canManage && report.status === 'verified' && !report.received_at && (
+                                        <button
+                                            onClick={() => (report.category === 'Elektronik' ? setShowReceiveModal(true) : receiveItem())}
+                                            className="w-full py-2.5 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 transition"
+                                        >
+                                            Catat Barang Diterima
+                                        </button>
+                                    )}
+
+                                    {canManage && serialNumber && (
+                                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                                                <span className="material-symbols-outlined text-sm">pin</span>
+                                                Nomor seri / IMEI (dicatat admin)
+                                            </p>
+                                            <p className="text-sm text-slate-800 mt-1 font-mono break-all">{serialNumber}</p>
+                                        </div>
+                                    )}
+
+                                    {canManage && secretFeature && (
+                                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                                                <span className="material-symbols-outlined text-sm">lock</span>
+                                                Ciri khusus (rahasia)
+                                            </p>
+                                            <p className="text-sm text-slate-800 mt-1 break-words">{secretFeature}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Status Timeline Card */}
                             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
@@ -423,14 +565,14 @@ export default function ReportDetail() {
 
                                     {/* Step 2: Verifikasi */}
                                     <div className="flex gap-3 items-start">
-                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center z-10 flex-shrink-0 shadow-sm ${report.status === 'verified' || report.status === 'resolved' ? 'bg-[#185FA5]' : 'bg-gray-100 border border-gray-200'}`}>
-                                            {report.status === 'verified' || report.status === 'resolved' ? (
+                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center z-10 flex-shrink-0 shadow-sm ${['verified', 'matched', 'resolved'].includes(report.status) ? 'bg-[#185FA5]' : 'bg-gray-100 border border-gray-200'}`}>
+                                            {['verified', 'matched', 'resolved'].includes(report.status) ? (
                                                 <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                                             ) : (
                                                 <div className="w-2 h-2 rounded-full bg-gray-300"></div>
                                             )}
                                         </div>
-                                        <div className={report.status === 'verified' || report.status === 'resolved' ? '' : 'opacity-40'}>
+                                        <div className={['verified', 'matched', 'resolved'].includes(report.status) ? '' : 'opacity-40'}>
                                             <p className="text-sm font-bold text-gray-800">Diverifikasi Admin</p>
                                             <p className="text-xs text-gray-400">{report.status === 'pending' ? 'Menunggu verifikasi...' : formatRelativeTime(report.updated_at)}</p>
                                         </div>
@@ -489,9 +631,9 @@ export default function ReportDetail() {
                             {myLostReports.length === 0 ? (
                                 <div className="text-center py-6">
                                     <div className="text-5xl mb-3">🔍</div>
-                                    <h4 className="font-bold text-gray-900 mb-1">Belum Ada Laporan Barang Hilang</h4>
+                                    <h4 className="font-bold text-gray-900 mb-1">Belum Ada Laporan Hilang Terverifikasi</h4>
                                     <p className="text-gray-500 text-sm mb-4">
-                                        Untuk mengklaim barang, Anda harus punya laporan barang hilang terlebih dahulu.
+                                        Untuk mengklaim barang, Anda harus punya laporan barang hilang yang sudah diverifikasi admin kelurahan.
                                     </p>
                                     <Link
                                         href="/reports/create"
@@ -543,6 +685,44 @@ export default function ReportDetail() {
                                 ))
                             )}
                         </div>
+
+                        {report.category === 'Elektronik' && myLostReports.length > 0 && (
+                            <div className="px-6 pb-3 pt-3 border-t border-gray-100">
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                    Nomor seri / IMEI perangkat <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={claimSerial}
+                                    onChange={(e) => setClaimSerial(e.target.value)}
+                                    maxLength="100"
+                                    placeholder="Mis. IMEI 15 digit (tekan *#06# di HP) atau nomor seri di kotak/nota"
+                                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-mono focus:ring-2 focus:ring-[#185FA5]"
+                                />
+                                <p className="text-[11px] text-gray-400 mt-1">
+                                    Tidak hafal? Cek kotak, nota pembelian, atau akun Google/Apple. Admin mencocokkan dengan catatan dari fisik perangkat.
+                                </p>
+                            </div>
+                        )}
+
+                        {requiresProof && myLostReports.length > 0 && (
+                            <div className="px-6 pb-4 pt-3 border-t border-gray-100">
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                                    Ciri khusus barang ini <span className="text-red-500">*</span>
+                                </label>
+                                <textarea
+                                    value={claimProof}
+                                    onChange={(e) => setClaimProof(e.target.value)}
+                                    rows="3"
+                                    maxLength="500"
+                                    placeholder="Sebutkan ciri yang hanya pemilik tahu, mis. wallpaper HP, isi dompet, goresan/stiker di bagian dalam"
+                                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#185FA5] resize-none"
+                                />
+                                <p className="text-[11px] text-gray-400 mt-1">
+                                    Jawaban Anda dibandingkan admin dengan catatan penemu. Jangan menebak.
+                                </p>
+                            </div>
+                        )}
 
                         {myLostReports.length > 0 && (
                             <div className="px-6 py-4 border-t border-gray-100 flex gap-3 justify-end">
@@ -656,11 +836,11 @@ export default function ReportDetail() {
                                             <div className="mt-4 pt-4 border-t border-gray-200/60 flex flex-col sm:flex-row-reverse gap-2">
                                                 {match.user_id !== user?.id && (
                                                     <button
-                                                        onClick={() => handleClaim(match.id, match.item_name, report.id)}
+                                                        onClick={() => router.visit(`/reports/${match.id}?lost_report_id=${report.id}`)}
                                                         disabled={claimLoading}
                                                         className="flex-1 sm:flex-none px-5 py-2 bg-[#185FA5] text-white font-bold text-xs rounded-xl shadow-sm hover:bg-[#134d87] hover:shadow-md transition-all active:scale-95 disabled:opacity-50"
                                                     >
-                                                        {claimLoading ? 'Memproses...' : 'Klaim Barang'}
+                                                        Lanjut Klaim
                                                     </button>
                                                 )}
                                                 <button

@@ -71,4 +71,57 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->belongsTo(Region::class);
     }
+
+    /* ---------- Helper role & wilayah ---------- */
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'super_admin';
+    }
+
+    public function isAdminKelurahan(): bool
+    {
+        return $this->role === 'admin_kelurahan';
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->isSuperAdmin() || $this->isAdminKelurahan();
+    }
+
+    /**
+     * Boleh mengelola (verifikasi / edit / hapus / putuskan klaim)
+     * data milik wilayah tertentu?
+     */
+    public function canManageRegion($regionId): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        return $this->isAdminKelurahan()
+            && $this->region_id !== null
+            && $regionId !== null
+            && (int) $this->region_id === (int) $regionId;
+    }
+
+    /**
+     * Boleh melihat foto ASLI (tanpa blur) sebuah laporan?
+     * Pemilik laporan, admin wilayah laporan, atau admin wilayah yang memutuskan
+     * klaim yang merujuk laporan hilang ini.
+     */
+    public function canViewOriginalPhoto(Report $report): bool
+    {
+        if ($report->user_id === $this->id || $this->canManageRegion($report->region_id)) {
+            return true;
+        }
+
+        if ($this->isAdminKelurahan() && $this->region_id) {
+            return Claim::where('lost_report_id', $report->id)
+                ->whereHas('report', fn ($q) => $q->where('region_id', $this->region_id))
+                ->exists();
+        }
+
+        return false;
+    }
 }

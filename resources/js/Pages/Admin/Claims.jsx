@@ -138,7 +138,7 @@ export default function AdminClaims() {
                         
                         <div className="mb-4">
                             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                                Catatan (jika ditolak)
+                                Alasan penolakan (wajib jika menolak)
                             </label>
                             <textarea
                                 value={adminNote}
@@ -158,7 +158,9 @@ export default function AdminClaims() {
                             </button>
                             <button
                                 onClick={() => verifyClaim('rejected')}
-                                className="flex-1 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-semibold text-sm"
+                                disabled={!adminNote.trim()}
+                                title={!adminNote.trim() ? 'Isi alasan penolakan terlebih dahulu' : ''}
+                                className="flex-1 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-semibold text-sm disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 ❌ Tolak
                             </button>
@@ -332,35 +334,31 @@ export default function AdminClaims() {
                                                             <p className="text-sm">{claim.report?.location}</p>
                                                         </div>
                                                         <p className="text-xs text-gray-400">{formatDate(claim.created_at)}</p>
+                                                        {claim.report?.region?.name && (
+                                                            <p className="text-xs text-gray-400 mt-0.5">{claim.report.region.name}</p>
+                                                        )}
+                                                        {claim.status === 'approved' && (
+                                                            <span className={`inline-block mt-1 mr-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                                                claim.handed_over_at ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                                            }`}>
+                                                                {claim.handed_over_at ? 'Sudah diserahkan' : 'Menunggu pengambilan'}
+                                                            </span>
+                                                        )}
+                                                        {!claim.can_decide && (
+                                                            <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
+                                                                Hanya info
+                                                            </span>
+                                                        )}
                                                     </td>
                                                     <td className="px-5 py-4 text-right">
                                                         <div className="flex items-center justify-end gap-2">
-                                                            {claim.status === 'pending' && (
+                                                            {claim.status === 'pending' && claim.can_decide && (
                                                                 <>
                                                                     <button
                                                                         onClick={() => openVerifyModal(claim)}
                                                                         className="bg-[#185FA5] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#0C447C] transition"
                                                                     >
                                                                         Verifikasi
-                                                                    </button>
-                                                                    {/* ⭐ TOMBOL TOLAK LANGSUNG ⭐ */}
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setSelectedClaim(claim);
-                                                                            setAdminNote('');
-                                                                            // Verifikasi langsung dengan status rejected
-                                                                            router.put(`/admin/claims/${claim.id}`, {
-                                                                                status: 'rejected',
-                                                                                admin_note: 'Ditolak oleh admin',
-                                                                            }, {
-                                                                                onSuccess: () => {
-                                                                                    setTimeout(() => window.location.reload(), 500);
-                                                                                },
-                                                                            });
-                                                                        }}
-                                                                        className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-600 transition"
-                                                                    >
-                                                                        Tolak
                                                                     </button>
                                                                 </>
                                                             )}

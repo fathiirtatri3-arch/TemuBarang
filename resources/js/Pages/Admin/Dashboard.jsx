@@ -3,7 +3,8 @@ import { Link, usePage, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 
 export default function AdminDashboard() {
-    const { reports } = usePage().props;
+    const { reports, auth, regionName } = usePage().props;
+    const isSuperAdmin = auth?.user?.role === 'super_admin';
     const [statusFilter, setStatusFilter] = useState('all');
     const [typeFilter, setTypeFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
@@ -20,6 +21,10 @@ export default function AdminDashboard() {
     const itemsPerPage = 10;
     const [regions, setRegions] = useState([]);
     const [regionFilter, setRegionFilter] = useState('all');
+    const [rejectTarget, setRejectTarget] = useState(null);
+    const [rejectReason, setRejectReason] = useState('');
+    const [rejectError, setRejectError] = useState('');
+    const [rejecting, setRejecting] = useState(false);
     
     const showToast = (message, type = 'success') => {
         setToast({ show: true, message, type });
@@ -34,7 +39,7 @@ export default function AdminDashboard() {
             report.item_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             report.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             report.location.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesStatus && matchesType && matchesSearch;
+        return matchesStatus && matchesType && matchesRegion && matchesSearch;
     });
     
     useEffect(() => {
@@ -198,6 +203,34 @@ export default function AdminDashboard() {
         }
     };
     
+    const submitReject = () => {
+        if (rejectReason.trim().length < 5) {
+            setRejectError('Alasan penolakan wajib diisi (minimal 5 karakter).');
+            return;
+        }
+        setRejecting(true);
+        router.put(`/admin/reports/${rejectTarget.id}/reject`, { reason: rejectReason }, {
+            preserveScroll: true,
+            onSuccess: (page) => {
+                const f = page.props.flash || {};
+                setRejectTarget(null);
+                showToast(f.error || f.success || 'Laporan ditolak', f.error ? 'error' : 'success');
+            },
+            onError: (errs) => setRejectError(errs.reason || 'Gagal menolak laporan.'),
+            onFinish: () => setRejecting(false),
+        });
+    };
+
+    const receiveReport = (reportId) => {
+        router.put(`/admin/reports/${reportId}/receive`, {}, {
+            preserveScroll: true,
+            onSuccess: (page) => {
+                const f = page.props.flash || {};
+                showToast(f.error || f.success || 'Penerimaan barang dicatat', f.error ? 'error' : 'success');
+            },
+        });
+    };
+
     const handleBulkAction = async () => {
         if (selectedReports.length === 0) {
             showToast('Pilih minimal satu laporan', 'error');
@@ -220,9 +253,16 @@ export default function AdminDashboard() {
                     body: JSON.stringify({ status: bulkAction })
                 })
             );
-            await Promise.all(promises);
+            const responses = await Promise.all(promises);
+            const okCount = responses.filter(r => r.ok).length;
+            const failCount = responses.length - okCount;
             const actionLabel = bulkAction === 'verified' ? 'diverifikasi' : 'diselesaikan';
-            showToast(`✅ ${selectedReports.length} laporan berhasil ${actionLabel}`, 'success');
+            showToast(
+                failCount === 0
+                    ? `✅ ${okCount} laporan berhasil ${actionLabel}`
+                    : `${okCount} laporan berhasil ${actionLabel}, ${failCount} gagal (di luar wilayah atau status tidak sesuai)`,
+                failCount === 0 ? 'success' : 'error'
+            );
             setSelectedReports([]);
             setSelectAll(false);
             setShowBulkModal(false);
@@ -248,6 +288,8 @@ export default function AdminDashboard() {
             case 'pending': return { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Menunggu' };
             case 'verified': return { bg: 'bg-green-100', text: 'text-green-700', label: 'Terverifikasi' };
             case 'resolved': return { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Selesai' };
+            case 'matched': return { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Serah Terima' };
+            case 'rejected': return { bg: 'bg-red-100', text: 'text-red-700', label: 'Ditolak' };
             default: return { bg: 'bg-gray-100', text: 'text-gray-800', label: status };
         }
     };
@@ -283,6 +325,44 @@ export default function AdminDashboard() {
                 </div>
             )}
             
+            {/* Reject Report Modal */}
+            {rejectTarget && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center animate-fadeIn">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 animate-scaleIn">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+                                <span className="material-symbols-outlined text-red-600">block</span>
+                            </div>
+                            <div className="min-w-0">
+                                <h3 className="text-lg font-bold text-gray-900">Tolak Laporan</h3>
+                                <p className="text-xs text-gray-500 truncate">{rejectTarget.item_name}</p>
+                            </div>
+                        </div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                            Alasan penolakan <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                            value={rejectReason}
+                            onChange={(e) => { setRejectReason(e.target.value); setRejectError(''); }}
+                            rows="3"
+                            maxLength="500"
+                            placeholder="Contoh: foto tidak jelas / data tidak lengkap / bukan barang yang dimaksud"
+                            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#185FA5] text-sm resize-none"
+                        />
+                        {rejectError && <p className="text-xs text-red-600 mt-1.5">{rejectError}</p>}
+                        <p className="text-xs text-gray-400 mt-2">Pelapor akan menerima alasan ini dan dapat memperbaiki laporannya.</p>
+                        <div className="flex gap-3 justify-end mt-5">
+                            <button onClick={() => setRejectTarget(null)} className="px-4 py-2 border border-gray-300 rounded-xl text-gray-600 hover:bg-gray-50 transition font-semibold text-sm">
+                                Batal
+                            </button>
+                            <button onClick={submitReject} disabled={rejecting} className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition disabled:opacity-50 font-semibold text-sm">
+                                {rejecting ? 'Memproses...' : 'Ya, Tolak Laporan'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Bulk Action Modal */}
             {showBulkModal && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center animate-fadeIn">
@@ -314,7 +394,11 @@ export default function AdminDashboard() {
                     {/* Header */}
                     <div className="mb-6">
                         <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Verifikasi Laporan</h2>
-                        <p className="text-gray-500 text-sm">Kelola dan verifikasi temuan barang di lingkungan Kecamatan Sambikerep.</p>
+                        <p className="text-gray-500 text-sm">
+                            {regionName
+                                ? `Kelola dan verifikasi laporan di wilayah Kelurahan ${regionName}.`
+                                : 'Kelola dan verifikasi laporan barang di seluruh Kecamatan Sambikerep.'}
+                        </p>
                     </div>
                     
                     {/* Stats Grid - 6 Cards */}
@@ -451,19 +535,21 @@ export default function AdminDashboard() {
                                     className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#185FA5] focus:border-[#185FA5] text-sm"
                                 />
                             </div>
-                            <div className="relative w-full sm:w-48">
-                                <select
-                                    value={regionFilter}
-                                    onChange={(e) => setRegionFilter(e.target.value)}
-                                    className="w-full appearance-none px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#185FA5] text-sm bg-white"
-                                >
-                                    <option value="all">🗺️ Semua Kelurahan</option>
-                                    {regions.map(region => (
-                                        <option key={region.id} value={region.id}>{region.name}</option>
-                                    ))}
-                                </select>
-                                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-sm">expand_more</span>
-                            </div>
+                            {isSuperAdmin && (
+                                <div className="relative w-full sm:w-48">
+                                    <select
+                                        value={regionFilter}
+                                        onChange={(e) => setRegionFilter(e.target.value)}
+                                        className="w-full appearance-none px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#185FA5] text-sm bg-white"
+                                    >
+                                        <option value="all">🗺️ Semua Kelurahan</option>
+                                        {regions.map(region => (
+                                            <option key={region.id} value={region.id}>{region.name}</option>
+                                        ))}
+                                    </select>
+                                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-sm">expand_more</span>
+                                </div>
+                            )}
                             <div className="relative w-full sm:w-48">
                                 <select
                                     value={statusFilter}
@@ -474,6 +560,8 @@ export default function AdminDashboard() {
                                     <option value="pending">⏳ Menunggu</option>
                                     <option value="verified">✅ Terverifikasi</option>
                                     <option value="resolved">🎉 Selesai</option>
+                                    <option value="matched">🤝 Serah Terima</option>
+                                    <option value="rejected">🚫 Ditolak</option>
                                 </select>
                                 <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-sm">expand_more</span>
                             </div>
@@ -607,6 +695,14 @@ export default function AdminDashboard() {
                                                     <td className="px-4 py-3">
                                                         <div className="flex items-center justify-end gap-2">
                                                             {report.status === 'pending' && (
+                                                                <button
+                                                                    onClick={() => { setRejectTarget(report); setRejectReason(''); setRejectError(''); }}
+                                                                    className="px-3 py-1.5 border border-red-300 text-red-600 rounded-lg text-xs font-semibold hover:bg-red-50 transition"
+                                                                >
+                                                                    Tolak
+                                                                </button>
+                                                            )}
+                                                            {report.status === 'pending' && (
                                                                 <button 
                                                                     onClick={() => updateStatus(report.id, 'verified')}
                                                                     disabled={isProcessing}
@@ -615,7 +711,15 @@ export default function AdminDashboard() {
                                                                     Verifikasi
                                                                 </button>
                                                             )}
-                                                            {report.status === 'verified' && (
+                                                            {report.type === 'found' && report.status === 'verified' && !report.received_at && (
+                                                                <button
+                                                                    onClick={() => (report.category === 'Elektronik' ? router.visit(`/reports/${report.id}`) : receiveReport(report.id))}
+                                                                    className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 transition"
+                                                                >
+                                                                    Terima Barang
+                                                                </button>
+                                                            )}
+                                                            {report.status === 'verified' && report.type === 'lost' && (
                                                                 <button 
                                                                     onClick={() => updateStatus(report.id, 'resolved')}
                                                                     disabled={isProcessing}

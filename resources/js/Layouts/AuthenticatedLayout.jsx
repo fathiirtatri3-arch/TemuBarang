@@ -266,7 +266,7 @@ export default function AuthenticatedLayout({ children }) {
                                 {user?.name || 'User'}
                             </div>
                             <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500 }}>
-                                {isSuperAdmin ? 'Super Admin' : isAdmin ? 'Admin Kelurahan' : 'Warga'}
+                                {isSuperAdmin ? 'Admin Kecamatan' : isAdmin ? (user?.region_name ? `Admin ${user.region_name}` : 'Admin Kelurahan') : 'Warga'}
                             </div>
                         </div>
                     </Link>

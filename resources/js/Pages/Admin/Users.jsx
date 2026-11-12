@@ -3,11 +3,15 @@ import { usePage, Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
 export default function Users() {
-    const { users } = usePage().props;
+    const { users, regions = [], flash } = usePage().props;
     const [search, setSearch] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all');
     const [isDeleting, setIsDeleting] = useState(false);
+    const [roleModal, setRoleModal] = useState(null);
+    const [selectedRegion, setSelectedRegion] = useState('');
+    const [modalError, setModalError] = useState('');
+    const [savingRole, setSavingRole] = useState(false);
     
     const handleDelete = (id, name) => {
         if (confirm(`Yakin ingin menghapus user "${name}"?`)) {
@@ -24,10 +28,33 @@ export default function Users() {
         }
     };
     
-    const handleRoleChange = (id, role) => {
-        if (confirm(`Ubah role user ini menjadi ${role}?`)) {
-            router.put(`/admin/users/${id}/role`, { role });
+    const handleDemote = (id, name) => {
+        if (confirm(`Ubah "${name}" menjadi Warga? Akses adminnya akan dicabut.`)) {
+            router.put(`/admin/users/${id}/role`, { role: 'user' }, { preserveScroll: true });
         }
+    };
+
+    const openRegionModal = (user) => {
+        setRoleModal(user);
+        setSelectedRegion(user.region_id ? String(user.region_id) : '');
+        setModalError('');
+    };
+
+    const saveAdminKelurahan = () => {
+        if (!selectedRegion) {
+            setModalError('Pilih kelurahan terlebih dahulu.');
+            return;
+        }
+        setSavingRole(true);
+        router.put(`/admin/users/${roleModal.id}/role`, {
+            role: 'admin_kelurahan',
+            region_id: selectedRegion,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => setRoleModal(null),
+            onError: (errs) => setModalError(errs.region_id || errs.role || 'Gagal menyimpan.'),
+            onFinish: () => setSavingRole(false),
+        });
     };
     
     const getRoleLabel = (role) => {
@@ -90,6 +117,58 @@ export default function Users() {
     
     return (
         <AuthenticatedLayout>
+            {/* Modal: tunjuk / ubah wilayah Admin Kelurahan */}
+            {roleModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-[#D4E3FF] rounded-xl flex items-center justify-center">
+                                <span className="material-symbols-outlined text-[#185FA5]">location_city</span>
+                            </div>
+                            <div className="min-w-0">
+                                <h3 className="text-lg font-bold text-gray-900">
+                                    {roleModal.role === 'admin_kelurahan' ? 'Ubah Wilayah Admin' : 'Jadikan Admin Kelurahan'}
+                                </h3>
+                                <p className="text-xs text-gray-500 truncate">{roleModal.name} • {roleModal.email}</p>
+                            </div>
+                        </div>
+
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                            Kelurahan yang diampu <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                            value={selectedRegion}
+                            onChange={(e) => { setSelectedRegion(e.target.value); setModalError(''); }}
+                            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#185FA5] bg-white"
+                        >
+                            <option value="">-- Pilih kelurahan --</option>
+                            {regions.map((r) => (
+                                <option key={r.id} value={r.id}>{r.name}</option>
+                            ))}
+                        </select>
+                        {modalError && <p className="text-xs text-red-600 mt-1.5">{modalError}</p>}
+                        <p className="text-xs text-gray-400 mt-3">
+                            Admin kelurahan hanya dapat melihat dan memproses laporan serta klaim di kelurahan ini.
+                        </p>
+
+                        <div className="flex gap-3 justify-end mt-5">
+                            <button
+                                onClick={() => setRoleModal(null)}
+                                className="px-4 py-2 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition text-sm font-semibold"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={saveAdminKelurahan}
+                                disabled={savingRole}
+                                className="px-4 py-2 bg-[#185FA5] text-white rounded-xl hover:bg-[#0C447C] transition text-sm font-semibold disabled:opacity-50"
+                            >
+                                {savingRole ? 'Menyimpan...' : 'Simpan'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             <div className="min-h-screen bg-[#F8FAFC]">
                 <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
                     
@@ -98,11 +177,20 @@ export default function Users() {
                         <div>
                             <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Manajemen Akses Pengguna</h2>
                             <p className="text-gray-500 text-sm max-w-2xl mt-1">
-                                Kelola dan pantau seluruh akun pengguna yang terdaftar di sistem TemuBarang untuk menjaga keamanan data sekolah.
+                                Kelola akun pengguna TemuBarang, tunjuk admin kelurahan beserta wilayahnya, dan jaga keamanan data warga.
                             </p>
                         </div>
                     </div>
                     
+                    {/* Pesan sukses / error */}
+                    {(flash?.success || flash?.error) && (
+                        <div className={`mb-4 px-4 py-3 rounded-xl text-sm font-medium border ${
+                            flash.success ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'
+                        }`}>
+                            {flash.success || flash.error}
+                        </div>
+                    )}
+
                     {/* Stats Cards */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         {/* Card 1: Total Pengguna */}
@@ -239,6 +327,20 @@ export default function Users() {
                                                         <span className={`px-3 py-1 rounded-full text-xs font-bold ${badge.bg}`}>
                                                             {getRoleLabel(user.role)}
                                                         </span>
+                                                            {user.role === 'admin_kelurahan' && (
+                                                                <button
+                                                                    onClick={() => openRegionModal(user)}
+                                                                    className="p-2 text-[#185FA5] hover:bg-[#D4E3FF] rounded-lg transition-colors"
+                                                                    title="Ubah Wilayah"
+                                                                >
+                                                                    <span className="material-symbols-outlined text-sm">edit_location_alt</span>
+                                                                </button>
+                                                            )}
+                                                            {user.role === 'admin_kelurahan' && (
+                                                            <p className="text-[11px] text-gray-400 mt-1">
+                                                                {user.region_name ? `Kel. ${user.region_name}` : 'Wilayah belum diatur'}
+                                                            </p>
+                                                        )}
                                                     </td>
                                                     <td className="px-4 py-3 text-sm text-gray-600">{formatDate(user.created_at)}</td>
                                                     <td className="px-4 py-3">
@@ -259,7 +361,7 @@ export default function Users() {
                                                             {/* Tombol ubah role — hanya untuk user dan admin_kelurahan */}
                                                             {user.role === 'user' && (
                                                                 <button
-                                                                    onClick={() => handleRoleChange(user.id, 'admin_kelurahan')}
+                                                                    onClick={() => openRegionModal(user)}
                                                                     className="p-2 text-[#185FA5] hover:bg-[#D4E3FF] rounded-lg transition-colors"
                                                                     title="Jadikan Admin Kelurahan"
                                                                 >
@@ -268,7 +370,7 @@ export default function Users() {
                                                             )}
                                                             {user.role === 'admin_kelurahan' && (
                                                                 <button
-                                                                    onClick={() => handleRoleChange(user.id, 'user')}
+                                                                    onClick={() => handleDemote(user.id, user.name)}
                                                                     className="p-2 text-[#6F3800] hover:bg-[#FFDCC4] rounded-lg transition-colors"
                                                                     title="Jadikan Warga"
                                                                 >

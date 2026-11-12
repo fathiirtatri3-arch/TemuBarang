@@ -27,6 +27,7 @@ export default function CreateReport() {
         region_id: '',
         latitude: '',
         longitude: '',
+        secret_feature: '',
     });
     
     // Real-time validation
@@ -57,7 +58,7 @@ export default function CreateReport() {
                     setCategories([
                         'Elektronik', 'Dokumen & Surat', 'Pakaian & Aksesoris', 'Alat Tulis',
                         'Perlengkapan Makan & Minum', 'Dompet & Tas', 'Kartu & Identitas', 'Kunci',
-                        'Perhiasan & Aksesoris', 'Kendaraan & Aksesoris', 'Anak & Bayi', 'Lainnya'
+                        'Perhiasan & Aksesoris', 'Kendaraan & Aksesoris', 'Anak & Bayi', 'Uang', 'Lainnya'
                     ]);
                 }
                 } catch (error) {
@@ -65,7 +66,7 @@ export default function CreateReport() {
                     setCategories([
                         'Elektronik', 'Dokumen & Surat', 'Pakaian & Aksesoris', 'Alat Tulis',
                         'Perlengkapan Makan & Minum', 'Dompet & Tas', 'Kartu & Identitas', 'Kunci',
-                        'Perhiasan & Aksesoris', 'Kendaraan & Aksesoris', 'Anak & Bayi', 'Lainnya'
+                        'Perhiasan & Aksesoris', 'Kendaraan & Aksesoris', 'Anak & Bayi', 'Uang', 'Lainnya'
                     ]);
                 } finally {
                     setCategoriesLoading(false);
@@ -156,6 +157,11 @@ export default function CreateReport() {
             return;
         }
 
+        if (data.type === 'found' && (data.secret_feature || '').trim().length < 5) {
+            showToast('Isi ciri khusus rahasia barang temuan (minimal 5 karakter)', 'error');
+            return;
+        }
+
         if (!data.latitude || !data.longitude) {
             showToast('Tandai lokasi di peta terlebih dahulu!', 'error');
             return;
@@ -187,7 +193,7 @@ export default function CreateReport() {
             onError: (errors) => {
                 console.error('Submit errors:', errors);
                 showToast(
-                    errors.error || errors.item_name || errors.description || errors.photo || errors.latitude || 'Gagal mengirim laporan. Cek kembali data Anda.',
+                    errors.error || errors.item_name || errors.description || errors.photo || errors.latitude || errors.secret_feature || 'Gagal mengirim laporan. Cek kembali data Anda.',
                     'error'
                 );
             },
@@ -195,6 +201,7 @@ export default function CreateReport() {
     };
     
     const today = new Date().toISOString().split('T')[0];
+    const selectedRegionName = regions.find(r => String(r.id) === String(data.region_id))?.name;
     
     return (
         <AuthenticatedLayout>
@@ -355,6 +362,12 @@ export default function CreateReport() {
                                             <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">expand_more</span>
                                         </div>
                                         {errors.category && <p className="mt-1 text-xs text-red-500">{errors.category}</p>}
+                                        {['Elektronik', 'Dokumen & Surat', 'Kartu & Identitas', 'Uang'].includes(data.category) && (
+                                            <p className="mt-1.5 text-xs text-slate-600 flex items-start gap-1.5">
+                                                <span className="material-symbols-outlined text-sm text-slate-500">visibility_off</span>
+                                                <span>Foto kategori ini disamarkan otomatis untuk publik. Admin kelurahan tetap melihat foto aslinya.</span>
+                                            </p>
+                                        )}
                                     </div>
 
                                     {/* Warna */}
@@ -478,6 +491,41 @@ export default function CreateReport() {
                                         </div>
                                         {errors.description && <p className="mt-1 text-xs text-red-500">{errors.description}</p>}
                                     </div>
+
+                                    {/* Barang temuan: info penyerahan + ciri khusus rahasia */}
+                                    {data.type === 'found' && (
+                                        <div className="col-span-2 space-y-4">
+                                            <div className="flex gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-200">
+                                                <span className="material-symbols-outlined text-amber-600">home_work</span>
+                                                <p className="text-sm text-amber-800 leading-relaxed">
+                                                    Setelah laporan diverifikasi, <strong>serahkan barang ke kantor {selectedRegionName || 'kelurahan yang Anda pilih'}</strong> agar bisa diberikan kepada pemiliknya dengan aman. Mohon jangan menyimpan barang sendiri.
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <label className="block font-semibold text-sm mb-2.5 text-gray-800 px-1">
+                                                    Ciri Khusus Rahasia <span className="text-red-500">*</span>
+                                                </label>
+                                                <div className="relative group">
+                                                    <span className="material-symbols-outlined absolute left-4 top-4 text-gray-400 group-focus-within:text-[#185FA5] transition-colors">lock</span>
+                                                    <textarea
+                                                        value={data.secret_feature}
+                                                        onChange={(e) => setData('secret_feature', e.target.value)}
+                                                        className={`w-full pl-12 pr-5 py-4 rounded-2xl border ${
+                                                            errors.secret_feature ? 'border-red-500' : 'border-gray-200'
+                                                        } bg-white outline-none focus:ring-4 focus:ring-blue-500 transition-all duration-300 resize-none`}
+                                                        placeholder="Contoh: wallpaper HP foto kucing, isi dompet ada struk Indomaret, ada goresan di bagian dalam tutup"
+                                                        rows="3"
+                                                        maxLength="255"
+                                                    />
+                                                </div>
+                                                <p className="mt-1.5 text-xs text-gray-500">
+                                                    🔒 Tidak ditampilkan ke publik. Hanya dilihat admin kelurahan untuk mencocokkan jawaban pemilik saat klaim. Jangan tulis ciri ini di kolom Deskripsi, karena Deskripsi tampil publik.
+                                                </p>
+                                                {errors.secret_feature && <p className="mt-1 text-xs text-red-500">{errors.secret_feature}</p>}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Upload Foto - Dengan Preview di DALAM Area Upload */}
                                     <div className="col-span-2">

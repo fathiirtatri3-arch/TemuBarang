@@ -4,7 +4,6 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
-use App\Models\Claim;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -37,14 +36,13 @@ class HandleInertiaRequests extends Middleware
                     'name' => $request->user()->name,
                     'email' => $request->user()->email,
                     'role' => $request->user()->role,
+                    'region_id' => $request->user()->region_id,
+                    'region_name' => $request->user()->region?->name,
                 ] : null,
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
-            ],
-            'stats' => [
-                'pending' => Claim::where('status', 'pending')->count(),
             ],
         ]);
     }

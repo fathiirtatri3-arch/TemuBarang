@@ -4,6 +4,8 @@ namespace App\Helpers;
 
 use App\Models\Notification;
 use App\Models\Report;
+use App\Models\User;
+use App\Services\MatchScoreService;
 
 class NotificationHelper
 {
@@ -20,40 +22,127 @@ class NotificationHelper
     }
 
 
-    // Fungsi untuk memeriksa kecocokan dan mengirim notifikasi jika ditemukan
+    /**
+     * Daftar admin yang bertanggung jawab atas sebuah kelurahan.
+     * Jika kelurahan itu belum punya admin, jatuh ke Admin Kecamatan (super_admin).
+     */
+    public static function adminsOfRegion($regionId)
+    {
+        if ($regionId) {
+            $admins = User::where('role', 'admin_kelurahan')
+                ->where('region_id', $regionId)
+                ->get();
+
+            if ($admins->isNotEmpty()) {
+                return $admins;
+            }
+        }
+
+        return User::where('role', 'super_admin')->get();
+    }
+
+    /**
+     * Kirim notifikasi ke semua admin sebuah kelurahan.
+     */
+    public static function sendToRegionAdmins($regionId, $title, $message, $type = 'info', $link = null)
+    {
+        foreach (self::adminsOfRegion($regionId) as $admin) {
+            self::send($admin->id, $title, $message, $type, $link);
+        }
+    }
+
+    /**
+     * Kirim hanya jika notifikasi yang sama belum pernah dikirim
+     * (mencegah dobel saat sebuah kecocokan dicek ulang).
+     */
+    private static function sendOnce($userId, $title, $message, $type, $link)
+    {
+        $exists = Notification::where('user_id', $userId)
+            ->where('type', $type)
+            ->where('link', $link)
+            ->where('message', $message)
+            ->exists();
+
+        if ($exists) {
+            return null;
+        }
+
+        return self::send($userId, $title, $message, $type, $link);
+    }
+
+    /**
+     * Cek kecocokan untuk laporan yang BARU SAJA diverifikasi.
+     * - Hanya laporan berstatus verified yang dicocokkan
+     * - Lintas kelurahan (tidak dibatasi wilayah)
+     * - Penerima: pemilik laporan hilang + admin kedua wilayah (info)
+     */
     public static function checkAndNotifyMatches($newReport)
     {
-        // Cari laporan yang berlawanan tipe (lost vs found)
+        if ($newReport->status !== 'verified') {
+            return;
+        }
+
         $oppositeType = $newReport->type === 'lost' ? 'found' : 'lost';
-        
-        // Cari laporan yang sudah terverifikasi dan berlawanan tipe
-        $potentialMatches = Report::where('type', $oppositeType)
+
+        $potentialMatches = Report::with('region')
+            ->where('type', $oppositeType)
             ->where('status', 'verified')
             ->where('user_id', '!=', $newReport->user_id)
             ->get();
-        
+
+        $newReport->loadMissing('region');
+
+        $scorer = app(MatchScoreService::class);
+
         foreach ($potentialMatches as $match) {
-            $score = self::calculateMatchScore($newReport, $match);
-            
-            // Jika skor di atas 60%, kirim notifikasi ke kedua user
-            if ($score >= 60) {
-                // Notifikasi ke pemilik laporan baru
-                self::send(
-                    $newReport->user_id,
-                    '🔍 Potensi Kecocokan Ditemukan',
-                    "Ada laporan {$oppositeType} \"{$match->item_name}\" yang mungkin cocok dengan laporan Anda (skor {$score}%).",
-                    'match',
-                    "/reports/{$match->id}"
-                );
-                
-                // Notifikasi ke pemilik laporan lama
-                self::send(
-                    $match->user_id,
-                    '🔍 Potensi Kecocokan Ditemukan',
-                    "Ada laporan baru \"{$newReport->item_name}\" yang mungkin cocok dengan laporan Anda (skor {$score}%).",
-                    'match',
-                    "/reports/{$newReport->id}"
-                );
+            // Hemat waktu: skor foto maksimal bernilai 50. Kalau dengan foto 100%
+            // pun skor tak mungkin mencapai ambang, lewati (tidak perlu hitung foto).
+            $text = $scorer->textScore($newReport, $match);
+            if (($text['score'] * 0.50) + 50 < MatchScoreService::NOTIFY_THRESHOLD) {
+                continue;
+            }
+
+            // Skor yang SAMA dengan halaman Pencocokan
+            $score = $scorer->score($newReport, $match)['score'];
+
+            if ($score < MatchScoreService::NOTIFY_THRESHOLD) {
+                continue;
+            }
+
+            $lost  = $newReport->type === 'lost' ? $newReport : $match;
+            $found = $newReport->type === 'found' ? $newReport : $match;
+
+            $lostRegion  = $lost->region?->name ?? '-';
+            $foundRegion = $found->region?->name ?? '-';
+
+            // 1) Pemilik laporan hilang
+            self::sendOnce(
+                $lost->user_id,
+                '🔍 Potensi Kecocokan Ditemukan',
+                "Barang temuan \"{$found->item_name}\" (Kel. {$foundRegion}) mungkin cocok dengan laporan hilang Anda \"{$lost->item_name}\" (skor {$score}%).",
+                'match',
+                "/reports/{$found->id}"
+            );
+
+            // 2) Admin kedua wilayah (info), satu kali per admin
+            $regionIds = collect([$lost->region_id, $found->region_id])->unique();
+            $adminIds = [];
+
+            foreach ($regionIds as $regionId) {
+                foreach (self::adminsOfRegion($regionId) as $admin) {
+                    if (in_array($admin->id, $adminIds)) {
+                        continue;
+                    }
+                    $adminIds[] = $admin->id;
+
+                    self::sendOnce(
+                        $admin->id,
+                        '🔍 Potensi Kecocokan Antar Laporan',
+                        "Laporan hilang \"{$lost->item_name}\" (Kel. {$lostRegion}) mungkin cocok dengan laporan temuan \"{$found->item_name}\" (Kel. {$foundRegion}), skor {$score}%.",
+                        'match',
+                        "/reports/{$found->id}"
+                    );
+                }
             }
         }
     }

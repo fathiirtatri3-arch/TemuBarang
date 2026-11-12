@@ -155,7 +155,9 @@ function ReportPanel({ report, type, onZoom, showCompareBadge = false }) {
         ? { text: 'BARANG TEMUAN', cls: 'text-emerald-700 bg-emerald-100/70 border-emerald-200', dot: 'bg-emerald-600' }
         : { text: 'LAPORAN HILANG PENGKLAIM', cls: 'text-rose-700 bg-rose-100/70 border-rose-200', dot: 'bg-rose-600' };
 
-    const photoUrl = report?.photo ? `/storage/${report.photo}` : null;
+    const photoUrl = report?.has_original_photo && report?.can_view_original
+        ? `/reports/${report.id}/photo-original`
+        : (report?.photo ? `/storage/${report.photo}` : null);
 
     return (
         <div className="flex flex-col h-full min-w-0">
@@ -271,11 +273,20 @@ function ReportPanel({ report, type, onZoom, showCompareBadge = false }) {
    HALAMAN UTAMA
    ============================================================ */
 export default function ClaimDetail() {
-    const { claim, lostReport } = usePage().props;
+    const { claim, lostReport, canVerify = true, decisionRegion, secretFeature = null, canHandover = false, handoverBy = null, serialNumber = null, serialMatch = null } = usePage().props;
     const [adminNote, setAdminNote] = useState('');
     const [processing, setProcessing] = useState(false);
     const [showVerifyModal, setShowVerifyModal] = useState(false);
     const [verifyAction, setVerifyAction] = useState('');
+    const [showHandoverModal, setShowHandoverModal] = useState(false);
+    const [handoverProcessing, setHandoverProcessing] = useState(false);
+    const [handoverErrors, setHandoverErrors] = useState({});
+    const [handoverForm, setHandoverForm] = useState({
+        receiver_name: claim.claimant?.name || '',
+        receiver_id_type: 'KTP',
+        handover_note: '',
+    });
+    const idTypes = ['KTP', 'KK', 'SIM', 'Kartu Pelajar', 'Lainnya'];
     const [lightbox, setLightbox] = useState(null); // { src, title }
 
     // Tutup lightbox dengan tombol Esc
@@ -288,9 +299,35 @@ export default function ClaimDetail() {
     }, []);
 
     const verifyClaim = (status) => {
+        if (status === 'approved' && !claim.report?.received_at) {
+            alert('Catat dulu penerimaan barang di kantor kelurahan (di halaman detail laporan temuan) sebelum menyetujui klaim.');
+            return;
+        }
+        if (status === 'approved' && claim.report?.category === 'Elektronik' && !serialNumber) {
+            alert('Catat nomor seri/IMEI perangkat (di halaman detail laporan temuan) sebelum menyetujui klaim.');
+            return;
+        }
         setVerifyAction(status);
         setAdminNote('');
         setShowVerifyModal(true);
+    };
+
+    const submitHandover = () => {
+        setHandoverProcessing(true);
+        setHandoverErrors({});
+        router.put(`/admin/claims/${claim.id}/handover`, handoverForm, {
+            preserveScroll: true,
+            onSuccess: (page) => {
+                const f = page.props.flash || {};
+                if (f.error) {
+                    setHandoverErrors({ general: f.error });
+                } else {
+                    setShowHandoverModal(false);
+                }
+            },
+            onError: (errs) => setHandoverErrors(errs),
+            onFinish: () => setHandoverProcessing(false),
+        });
     };
 
     const confirmVerify = () => {
@@ -441,6 +478,107 @@ export default function ClaimDetail() {
                 </div>
             )}
 
+            {/* Modal: catat serah terima */}
+            {showHandoverModal && (
+                <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scaleIn">
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-xl">handshake</span>
+                                </div>
+                                <h3 className="text-base font-bold text-slate-900">Catat Serah Terima</h3>
+                            </div>
+                            <button
+                                onClick={() => setShowHandoverModal(false)}
+                                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+                            >
+                                <span className="material-symbols-outlined text-lg">close</span>
+                            </button>
+                        </div>
+
+                        <div className="mt-4 space-y-4">
+                            {handoverErrors.general && (
+                                <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                                    {handoverErrors.general}
+                                </p>
+                            )}
+
+                            <div>
+                                <label className="block text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-1.5">
+                                    Nama pengambil <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={handoverForm.receiver_name}
+                                    onChange={(e) => setHandoverForm({ ...handoverForm, receiver_name: e.target.value })}
+                                    className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-[#185FA5] focus:border-transparent"
+                                    placeholder="Nama orang yang mengambil barang"
+                                />
+                                {handoverErrors.receiver_name && (
+                                    <p className="text-xs text-red-600 mt-1">{handoverErrors.receiver_name}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-1.5">
+                                    Identitas yang ditunjukkan <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    value={handoverForm.receiver_id_type}
+                                    onChange={(e) => setHandoverForm({ ...handoverForm, receiver_id_type: e.target.value })}
+                                    className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-[#185FA5] focus:border-transparent"
+                                >
+                                    {idTypes.map((t) => (
+                                        <option key={t} value={t}>{t}</option>
+                                    ))}
+                                </select>
+                                <p className="text-[11px] text-slate-400 mt-1">
+                                    Cukup catat jenis identitasnya, jangan menulis nomor lengkap.
+                                </p>
+                                {handoverErrors.receiver_id_type && (
+                                    <p className="text-xs text-red-600 mt-1">{handoverErrors.receiver_id_type}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-1.5">
+                                    Catatan (opsional)
+                                </label>
+                                <textarea
+                                    value={handoverForm.handover_note}
+                                    onChange={(e) => setHandoverForm({ ...handoverForm, handover_note: e.target.value })}
+                                    rows="2"
+                                    maxLength="500"
+                                    className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm resize-none focus:ring-2 focus:ring-[#185FA5] focus:border-transparent"
+                                    placeholder="Mis. diambil oleh kakak kandung, membawa surat kuasa"
+                                />
+                            </div>
+                        </div>
+
+                        <p className="text-xs text-slate-500 mt-4">
+                            Setelah disimpan, laporan temuan dan laporan hilang ditandai selesai. Tindakan ini tidak dapat dibatalkan.
+                        </p>
+
+                        <div className="flex gap-3 justify-end mt-5">
+                            <button
+                                onClick={() => setShowHandoverModal(false)}
+                                className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition text-sm font-semibold"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={submitHandover}
+                                disabled={handoverProcessing}
+                                className="px-5 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition text-sm font-bold disabled:opacity-50"
+                            >
+                                {handoverProcessing ? 'Menyimpan...' : 'Simpan Serah Terima'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Lightbox foto */}
             {lightbox && (
                 <div
@@ -565,6 +703,135 @@ export default function ClaimDetail() {
                                 )}
                             </div>
                         </section>
+
+                        {/* ============ VERIFIKASI CIRI KHUSUS (hanya pemutus klaim) ============ */}
+                        {canVerify && (
+                            <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                                <div className="pb-4 border-b border-gray-100">
+                                    <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-[#185FA5]">lock</span>
+                                        Verifikasi Ciri Khusus
+                                    </h2>
+                                    <p className="text-xs text-slate-500 mt-0.5">
+                                        Bandingkan ciri rahasia yang dicatat penemu dengan jawaban pengklaim. Jangan bagikan ciri rahasia ini kepada siapa pun.
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                                        <p className="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-1">Ciri rahasia dari penemu</p>
+                                        <p className="text-sm font-semibold text-slate-900 break-words">
+                                            {secretFeature || 'Penemu tidak mencatat ciri khusus.'}
+                                        </p>
+                                    </div>
+                                    <div className="p-4 rounded-xl bg-blue-50 border border-blue-100">
+                                        <p className="text-[10px] font-bold tracking-wider text-[#185FA5] uppercase mb-1">Jawaban pengklaim</p>
+                                        <p className="text-sm font-semibold text-slate-900 break-words">
+                                            {claim.claimant_proof || 'Pengklaim tidak mengisi jawaban.'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {claim.report?.category === 'Elektronik' && (
+                                    <div className="mt-4 p-4 rounded-xl border border-slate-200 bg-white">
+                                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                                            <p className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">Nomor seri / IMEI</p>
+                                            {serialMatch === true && (
+                                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Cocok</span>
+                                            )}
+                                            {serialMatch === false && (
+                                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-800 border border-red-200">Tidak cocok</span>
+                                            )}
+                                            {serialMatch === null && (
+                                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-600 border border-gray-200">Belum bisa dibandingkan</span>
+                                            )}
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                                            <div>
+                                                <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-1">Tercatat admin (dari fisik barang)</p>
+                                                <p className="text-sm font-mono text-slate-900 break-all">{serialNumber || '-'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-1">Jawaban pengklaim</p>
+                                                <p className="text-sm font-mono text-slate-900 break-all">{claim.claimant_serial || '-'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {!claim.report?.received_at && (
+                                    <div className="mt-4 flex flex-wrap items-center gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                                        <span className="material-symbols-outlined text-amber-600 text-base">warning</span>
+                                        <span>Barang belum tercatat diterima di kantor kelurahan. Klaim baru bisa disetujui setelah penerimaan dicatat.</span>
+                                        <Link href={`/reports/${claim.report?.id}`} className="font-bold underline">Buka laporan temuan</Link>
+                                    </div>
+                                )}
+                            </section>
+                        )}
+
+                        {/* ============ SERAH TERIMA BARANG ============ */}
+                        {claim.status === 'approved' && (
+                            <section className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                                <div className="pb-4 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+                                    <div>
+                                        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-[#185FA5]">handshake</span>
+                                            Serah Terima Barang
+                                        </h2>
+                                        <p className="text-xs text-slate-500 mt-0.5">
+                                            Catat siapa yang mengambil barang, supaya ada bukti penyerahan.
+                                        </p>
+                                    </div>
+                                    {claim.handed_over_at ? (
+                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                            Sudah diserahkan
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                            Menunggu pengambilan
+                                        </span>
+                                    )}
+                                </div>
+
+                                {claim.handed_over_at ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+                                            <p className="text-[10px] font-bold tracking-wider text-emerald-700 uppercase mb-1">Diserahkan kepada</p>
+                                            <p className="text-sm font-semibold text-slate-900 break-words">{claim.receiver_name}</p>
+                                            <p className="text-xs text-slate-600 mt-0.5">Identitas: {claim.receiver_id_type}</p>
+                                        </div>
+                                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                                            <p className="text-[10px] font-bold tracking-wider text-slate-500 uppercase mb-1">Waktu serah terima</p>
+                                            <p className="text-sm font-semibold text-slate-900">{formatDateTime(claim.handed_over_at)}</p>
+                                            <p className="text-xs text-slate-600 mt-0.5">Dicatat oleh {handoverBy || '-'}</p>
+                                        </div>
+                                        {claim.handover_note && (
+                                            <div className="md:col-span-2 p-4 rounded-xl bg-gray-50 border border-dashed border-gray-200">
+                                                <p className="text-[10px] font-bold tracking-wider text-gray-400 uppercase mb-1">Catatan</p>
+                                                <p className="text-sm italic text-gray-600 break-words">"{claim.handover_note}"</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : canHandover ? (
+                                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                                        <button
+                                            onClick={() => setShowHandoverModal(true)}
+                                            className="px-5 py-2.5 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 transition flex items-center gap-2"
+                                        >
+                                            <span className="material-symbols-outlined text-lg">inventory</span>
+                                            Catat Serah Terima
+                                        </button>
+                                        <p className="text-xs text-slate-500">
+                                            Klik setelah pemilik datang ke kantor dan barang diserahkan.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-slate-500 mt-4">
+                                        Serah terima dicatat oleh admin {decisionRegion || 'pemilik barang temuan'}.
+                                    </p>
+                                )}
+                            </section>
+                        )}
 
                         {/* ============ 2. PETA + PANEL KANAN ============ */}
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -756,7 +1023,13 @@ export default function ClaimDetail() {
                                         )}
                                     </div>
 
-                                    {claim.status === 'pending' ? (
+                                    {claim.status === 'pending' && !canVerify ? (
+                                        <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                            <p className="text-xs text-slate-600 leading-relaxed">
+                                                Keputusan klaim ini ada di <strong className="text-slate-900">Admin Kelurahan {decisionRegion || 'pemilik barang temuan'}</strong>, tempat barang temuan disimpan. Anda dapat melihat detailnya sebagai informasi.
+                                            </p>
+                                        </div>
+                                    ) : claim.status === 'pending' ? (
                                         <>
                                             <p className="text-xs text-slate-600 mt-3 leading-relaxed">
                                                 Anda akan memutuskan klaim <strong className="text-slate-900">{claim.claimant?.name}</strong> atas
@@ -821,7 +1094,7 @@ export default function ClaimDetail() {
             </div>
 
             {/* Bar verifikasi tetap di bawah (mobile) */}
-            {claim.status === 'pending' && (
+            {claim.status === 'pending' && canVerify && (
                 <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-slate-200 p-3 shadow-lg flex items-center gap-3">
                     <button
                         onClick={() => verifyClaim('rejected')}
