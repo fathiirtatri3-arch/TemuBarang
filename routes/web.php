@@ -19,6 +19,12 @@ Route::get('/', function () {
     ]);
 })->name('welcome');
 
+// Papan Barang Temuan - daftar publik barang temuan yang sedang aktif
+// masa klaimnya. Tanpa halaman ini, masa klaim 30 hari tidak bermakna karena
+// tidak ada yang tahu barang tersebut ada.
+Route::get('/barang-temuan', [\App\Http\Controllers\PublicBoardController::class, 'index'])
+    ->name('board.found');
+
 Route::get('/test-email', function () {
     $user = auth()->user();
     if (!$user) {
@@ -69,13 +75,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Routes untuk laporan
     Route::get('/reports', function () {
         $user = auth()->user();
-        
+
         // Admin Kecamatan: semua | Admin Kelurahan: wilayahnya | Warga: miliknya
         $reports = \App\Models\Report::with(['user:id,name,role', 'region'])
             ->visibleTo($user)
             ->latest()
             ->get();
-        
+
+        // Laporan temuan yang masa claimnya sudah lewat ditandai Kedaluwarsa
+        // supaya filter dan badge di halaman ini akurat.
+        app(\App\Services\ClaimWindowService::class)->syncExpiredCollection($reports);
+
         return Inertia::render('Reports/ReportsList', ['reports' => $reports]);
     })->name('reports.index');
     
@@ -119,15 +129,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Hanya id, nama, dan role pelapor yang dikirim ke browser (tanpa email/telepon)
         $report = \App\Models\Report::with(['user:id,name,role', 'region'])->findOrFail($id);
 
+        // Masa klaim yang sudah lewat -> langsung ditandai Kedaluwarsa.
+        // Jadi status tidak bergantung pada scheduler harian yang mungkin
+        // belum sempat jalan.
+        app(\App\Services\ClaimWindowService::class)->syncExpired($report);
+
         $canManage = $report->user_id === $user->id || $user->canManageRegion($report->region_id);
         $report->setAttribute('can_view_original', $user->canViewOriginalPhoto($report));
 
-        // Laporan HILANG milik user yang sudah terverifikasi (untuk pilihan saat klaim)
+        // Laporan HILANG milik user yang sudah terverifikasi (untuk pilihan saat klaim).
+        // Status 'matched' ikut disertakan supaya laporan yang sudah pernah dipakai
+        // untuk klaim yang disetujui TIDAK bisa dipakai lagi untuk klaim kedua.
         $myLostReports = \App\Models\Report::where('user_id', $user->id)
             ->where('type', 'lost')
-            ->where('status', 'verified')
+            ->whereIn('status', ['verified', 'matched'])
+            ->whereNotIn('id', function ($q) {
+                $q->select('lost_report_id')
+                    ->from('claims')
+                    ->whereNotNull('lost_report_id')
+                    ->whereIn('status', ['pending', 'approved']);
+            })
             ->latest()
             ->get(['id', 'item_name', 'category', 'color', 'location', 'date', 'photo', 'status']);
+
+        $imeiService = app(\App\Services\ImeiService::class);
 
         return Inertia::render('Reports/ReportDetail', [
             'report' => $report,
@@ -137,6 +162,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'serialNumber' => $canManage ? $report->serial_number : null,
             'requiresProof' => $report->type === 'found' && !empty($report->secret_feature),
             'rejectionReason' => $canManage ? $report->rejection_reason : null,
+
+            // Nomor seri / IMEI
+            'reportedImei' => $canManage ? $report->reported_imei : null,
+            'reportedImeiFormatted' => $canManage ? $imeiService->format($report->reported_imei) : null,
+            'imeiUnreadable' => $canManage ? (bool) $report->imei_unreadable : false,
+            'imeiVerifiedAt' => $canManage ? $report->imei_verified_at : null,
+
+            // Status privasi foto
+            'photoBlurred' => $report->isPhotoBlurred(),
+            'photoSensitive' => (bool) $report->photo_sensitive,
+            'piiDetected' => (bool) $report->pii_detected,
+            'piiStatus' => $report->pii_status,
+            'piiReasons' => $canManage ? ($report->pii_reasons ?? []) : [],
+            'piiCheckedAt' => $canManage ? $report->pii_checked_at : null,
+            'piiCheckError' => $canManage ? $report->pii_check_error : null,
         ]);
     })->name('reports.show');
 
@@ -172,6 +212,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('Reports/EditReport', [
             'report' => $report,
             'secretFeature' => $report->secret_feature,
+            'reportedImei' => $report->reported_imei,
+            'imeiUnreadable' => (bool) $report->imei_unreadable,
         ]);
     })->name('reports.edit');
 
@@ -208,6 +250,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->visibleTo($user)
             ->latest()
             ->get();
+
+        // Sinkronkan masa klaim yang sudah lewat -> badge "Kedaluwarsa" dan
+        // tombol "Tindak Lanjut" langsung muncul tanpa menunggu scheduler.
+        app(\App\Services\ClaimWindowService::class)->syncExpiredCollection($reports);
 
         return Inertia::render('Admin/Dashboard', [
             'reports' => $reports,
@@ -248,6 +294,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         }
 
         $report->update(['status' => $status]);
+
+        // Laporan temuan yang baru diverifikasi: buka masa klaim (30 hari).
+        // Masa klaim dihitung dari saat barang masuk kantor kelurahan; kalau
+        // barang belum diterima, dihitung dari waktu verifikasi.
+        if ($status === 'verified' && $report->type === 'found') {
+            app(\App\Services\ClaimWindowService::class)->openWindow($report->fresh());
+        }
 
         // Setelah terverifikasi, cek kecocokan lintas kelurahan
         if ($status === 'verified') {
@@ -290,11 +343,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return redirect()->back()->with('error', 'Hanya laporan temuan terverifikasi yang bisa dicatat penerimaannya.');
         }
 
-        // Barang elektronik: nomor seri/IMEI dicatat admin dari fisik perangkat
-        $serial = strtoupper(preg_replace('/\s+/', '', (string) request()->input('serial_number')));
+        // Barang elektronik: nomor seri/IMEI WAJIB dicatat admin dari fisik
+        // perangkat, karena inilah bukti kepemilikan yang paling kuat.
+        //
+        // Barang NON-elektronik (tumbler, jaket, payung, kunci) umumnya TIDAK
+        // punya nomor seri. Dulu aturan ini tetap memaksa minimal 5 karakter,
+        // sehingga barang seperti itu tidak pernah bisa dicatat "diterima" -
+        // artinya masa klaim juga tidak pernah di-anchor ke waktu penerimaan.
+        $imeiService = app(\App\Services\ImeiService::class);
+        $serialInput = (string) request()->input('serial_number');
+        $serial = $imeiService->normalize($serialInput) ?? strtoupper(preg_replace('/\s+/', '', $serialInput));
 
-        if ($report->category === 'Elektronik' && mb_strlen($serial) < 5) {
-            return redirect()->back()->with('error', 'Catat nomor seri/IMEI dari fisik perangkat (minimal 5 karakter).');
+        if ($report->category === 'Elektronik') {
+            if (!$imeiService->isValidImei($serial)) {
+                return redirect()->back()->with('error', $imeiService->validationMessage($serial));
+            }
+        } elseif ($serial !== '' && mb_strlen($serial) < 5) {
+            // Kalau memang diisi, minimal harus masuk akal - supaya tidak
+            // ada nomor seri asal-asalan yang tidak bisa dicocokkan.
+            return redirect()->back()->with('error', 'Nomor seri minimal 5 karakter. Kosongkan saja kalau barang ini tidak punya nomor seri.');
         }
 
         if ($report->received_at) {
@@ -305,7 +372,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'received_at' => now(),
             'received_by' => $user->id,
             'serial_number' => $serial !== '' ? $serial : null,
+            'imei_verified_at' => now(),
         ]);
+
+        // Barang baru masuk kantor kelurahan -> jangkar ulang masa klaim
+        // (30 hari) mulai dari waktu penerimaan, bukan dari waktu verifikasi.
+        app(\App\Services\ClaimWindowService::class)->openWindow($report->fresh());
 
         NotificationHelper::send(
             $report->user_id,
@@ -315,8 +387,88 @@ Route::middleware(['auth', 'verified'])->group(function () {
             "/reports/{$report->id}"
         );
 
+        // Bandingkan nomor seri yang dibaca admin dengan yang dilaporkan penemu
+        if ($report->reported_imei && $serial && !$imeiService->matches($report->reported_imei, $serial)) {
+            return redirect()->back()->with('warning', '⚠️ Nomor seri yang dibaca dari perangkat BERBEDA dengan yang dilaporkan penemu. Mohon verifikasi ulang sebelum menyetujui klaim.');
+        }
+
         return redirect()->back()->with('success', 'Penerimaan barang berhasil dicatat.');
     })->name('admin.reports.receive');
+
+    // Admin menyamarkan foto (koreksi manual hasil deteksi yang keliru)
+    Route::put('/admin/reports/{report}/privacy/blur', function ($id) {
+        $user = auth()->user();
+
+        if (!$user->isAdmin()) {
+            abort(403, 'Hanya admin yang bisa mengakses');
+        }
+
+        $report = \App\Models\Report::findOrFail($id);
+
+        if (!$user->canManageRegion($report->region_id)) {
+            abort(403, 'Laporan ini berada di luar wilayah Anda');
+        }
+
+        if ($report->photo_sensitive) {
+            return redirect()->back()->with('error', 'Foto kategori sensitif tidak bisa dibuka samarannya.');
+        }
+
+        if ($report->photo_blurred) {
+            return redirect()->back()->with('error', 'Foto laporan ini sudah disamarkan.');
+        }
+
+        app(\App\Services\PhotoPrivacyService::class)->protect($report, false);
+
+        $report->update([
+            'pii_status'           => 'forced',
+            'pii_detected'         => true,
+            'pii_reasons'          => ['Disamarkan manual oleh admin'],
+            'pii_checked_at'       => now(),
+            'privacy_override_by'  => $user->id,
+            'privacy_override_at'  => now(),
+        ]);
+
+        return redirect()->back()->with('success', 'Foto berhasil disamarkan.');
+    })->name('admin.reports.privacy.blur');
+
+    // Admin membuka samaran foto (hanya untuk hasil deteksi PII, bukan kategori sensitif)
+    Route::put('/admin/reports/{report}/privacy/unblur', function ($id) {
+        $user = auth()->user();
+
+        if (!$user->isAdmin()) {
+            abort(403, 'Hanya admin yang bisa diakses');
+        }
+
+        $report = \App\Models\Report::findOrFail($id);
+
+        if (!$user->canManageRegion($report->region_id)) {
+            abort(403, 'Laporan ini berada di luar wilayah Anda');
+        }
+
+        if ($report->photo_sensitive) {
+            return redirect()->back()->with('error', 'Foto kategori sensitif tetap disamarkan dan tidak bisa dibuka.');
+        }
+
+        if (!$report->photo_original) {
+            return redirect()->back()->with('error', 'Tidak ada foto asli yang tersimpan untuk laporan ini.');
+        }
+
+        $restored = app(\App\Services\PhotoPrivacyService::class)->restorePublic($report);
+
+        if (!$restored) {
+            return redirect()->back()->with('error', 'Gagal membuka samaran foto.');
+        }
+
+        $report->update([
+            'pii_status'          => 'cleared',
+            'pii_detected'        => false,
+            'pii_reasons'         => [],
+            'privacy_override_by' => $user->id,
+            'privacy_override_at' => now(),
+        ]);
+
+        return redirect()->back()->with('success', 'Samaran foto dibuka. Foto kini tampil normal.');
+    })->name('admin.reports.privacy.unblur');
 
     // Admin menolak laporan (wajib alasan)
     Route::put('/admin/reports/{report}/reject', function ($id) {
@@ -362,7 +514,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Route untuk halaman hasil pencocokan
     Route::get('/reports/{id}/match', function ($id) {
         $report = \App\Models\Report::with('user')->findOrFail($id);
-        return Inertia::render('Reports/MatchResult', [
+        return Inertia::render('Matching/MatchResult', [
             'reportId' => $id,
             'report' => $report
         ]);
@@ -390,6 +542,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/claims/{id}', [ClaimController::class, 'show'])->name('admin.claims.show');
     Route::put('/admin/claims/{id}', [ClaimController::class, 'verify'])->name('admin.claims.verify');
     Route::put('/admin/claims/{id}/handover', [ClaimController::class, 'handover'])->name('admin.claims.handover');
+
+    // Berita acara tindak lanjut: barang temuan yang masa klaimnya sudah habis
+    // dilepas ke penerbit / instansi berwenang / lembaga sosial, atau dimusnahkan.
+    Route::get('/admin/reports/{report}/followup', [\App\Http\Controllers\Admin\ReportFollowupController::class, 'show'])
+        ->name('admin.reports.followup');
+    Route::post('/admin/reports/{report}/followup', [\App\Http\Controllers\Admin\ReportFollowupController::class, 'store'])
+        ->name('admin.reports.followup.store');
 
     // Routes untuk manajemen user oleh admin
     Route::get('/admin/users', [App\Http\Controllers\Admin\UserController::class, 'index'])->name('admin.users');

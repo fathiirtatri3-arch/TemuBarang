@@ -1337,3 +1337,403 @@ Admin melihat laporan hilang tersebut di halaman detail klaim
 **File README.md sudah lengkap dari awal hingga akhir!** 🎉
 
 **Apakah ada bagian yang ingin ditambahkan atau disesuaikan?** 🚀
+
+---
+
+---
+
+## 🔐 Revisi dari Guru: Nomor Seri/IMEI + Deteksi Data Pribadi Otomatis
+
+Dokumen ini menjelaskan revisi yang diminta guru atas dua aspect: **nomor seri / IMEI sebagai bukti kepemilikan** dan **deteksi data pribadi otomatis pada foto laporan**.
+
+---
+
+### 1️⃣ Nomor Seri / IMEI
+
+#### Alur per peran
+
+| Peran | Kewajiban | Validasi |
+|-------|-----------|----------|
+| **Penemu** (barang temuan, kategori Elektronik) | Wajib mengisi nomor seri/IMEI. Kolom "ciri rahasia" digantikan oleh kolom nomor seri. | IMEI 15 digit + checksum Luhn → salah ketik langsung ketahuan |
+| **Penemu** (perangkat mati / terkunci) | Memilih checkbox **"Tidak bisa membaca"**. | Tidak wajib isi angka; admin yang membaca dari fisik |
+| **Admin kelurahan** | Membaca nomor seri dari **fisik perangkat** saat mencatat "Terima Barang". | Otomatis dibandingkan dengan yang dilaporkan penemu. **Beda → peringatan** |
+| **Pemilik** (laporan barang hilang) | **Opsional** mengisi IMEI | Kalau sama → pencocokan langsung 100% + notifikasi "🎯 Nomor Seri Cocok" |
+| **Pengklaim** | Wajib menyebut nomor seri | Admin melihat **tiga nilai berdampingan**: dilaporkan penemu, dibaca admin, jawaban penglaim |
+
+#### Effect_number seri pada pencocokan
+
+```
+IMEI kedua laporan identik  →  skor = 100% (sangat_mirip)
+                                tanpa perlu melihat nama atau foto
+                                + notifikasi "🎯 Nomor Seri Cocok"
+```
+
+Tersedia di `app/Services/MatchScoreService.php` (`imeiMatches()`) dan
+`app/Helpers/NotificationHelper.php` (`checkAndNotifyMatches()`).
+
+#### Checksum Luhn
+
+IMEI 15 digit memakai checksum Luhn, jadi satu digit salah ketik langsung tidak valid.
+Implementasi ada di dua tempat dan harus selalu sama:
+
+| Lokasi | File |
+|--------|------|
+| Backend | `app/Services/ImeiService.php` |
+| Browser | `resources/js/services/imei.js` |
+
+Contoh: `352099001761481` → valid. `352099001761482` → **tidak valid** (checksum salah).
+
+Format tampilan: `35-209900-176148-1`
+
+---
+
+### 2️⃣ Deteksi Data Pribadi Otomatis pada Foto
+
+Foto di luar kategori yang selalu disamarkan sekarang **diperiksa otomatis saat diunggah**.
+
+#### ⚙️ Aturan kategori sensitif (diperbarui)
+
+Kategori **Elektronik sengaja TIDAK lagi** termasuk kategori sensitif.
+
+| Kategori | Perlakuan foto | Bisa dibuka admin? |
+|----------|----------------|--------------------|
+| **Elektronik** | 🔓 Tampil normal (tajam) ke publik | — (tidak perlu dibuka) |
+| **Dokumen & Surat** | 🔒 Blur keras | ❌ **tidak bisa** |
+| **Kartu & Identitas** | 🔒 Blur keras | ❌ **tidak bisa** |
+| **Uang** | 🔒 Blur keras | ❌ **tidak bisa** |
+| Semua kategori lain | ✅ Tampil normal, **tapi dicek detektor PII** | ✅ bisa (tombol "Buka samaran") |
+
+**Alasan:** foto barang elektronik umumnya hanya menunjukkan **bodi barangnya**
+(bodi HP, casing, kabel), bukan identitas pemilik. Blur yang lama terlalu
+ekstrem — foto diperkecil ke **40 piksel** sehingga hanya menyisakan gumpalan
+warna dan **barang sama sekali tidak bisa dikenali** oleh warga yang
+mencarinya. Laporan jadi tidak berguna.
+
+**Tapi privasi tetap terjaga**, karena:
+1. Foto elektronik yang ternyata memuat data pribadi (mis. layar menampilkan KTP)
+   **tetap disamarkan otomatis** oleh detektor PII — dan admin **boleh** membuka
+   samaran kalau hasilnya keliru.
+2. Nomor seri/IMEI disimpan terpisah di `reports.reported_imei` yang ada di
+   `$hidden` model, jadi **tidak pernah** ikut terkirim ke browser publik.
+
+Konstanta yang mengatur: `App\Services\PhotoPrivacyService::SENSITIVE_CATEGORIES`.
+
+#### Yang dideteksi
+
+| Jenis | Cara deteksi |
+|-------|-------------|
+| **NIK** (16 digit) | Regex pada hasil OCR |
+| **Nomor kartu bank** (13–19 digit) | Regex + checksum Luhn |
+| **Kata kunci dokumen identitas** | Minimal **2** kata kunci berbeda (KTP, KK, SIM, NPWP, Akta Kelahiran, Paspor, dst.) |
+| **Wajah** | OpenCV Haar Cascade (`haarcascade_frontalface_default.xml`) |
+
+#### Keluarannya
+
+| Hasil | Tindakan |
+|-------|----------|
+| **Tidak ada data pribadi** | Foto tampil normal. Metadata EXIF/GPS tetap dibuang. |
+| **Data pribadi terdeteksi** | Foto disamarkan. Asli disimpan di disk **privat** (tanpa URL publik), publik hanya melihat versi buram. Alasan tersimpan di `reports.pii_reasons`. |
+| **Detektor gagal** (Tesseract belum terpasang / timeout) | Foto **tetap disamarkan** demi keamanan (*fail-safe*), alasannya tercatat di `reports.pii_check_error`. |
+
+#### Koreksi manual oleh admin
+
+| Tombol | Kapan dipakai | Efek |
+|--------|---------------|------|
+| **Samarkan foto** | Hasil deteksi keliru (foto sebenarnya aman, tapi terblur) | Foto asli pindah ke disk privat, publik melihat versi buram |
+| **Buka samaran** | Hasil deteksi keliru (foto sebenarnya ada data pribadi, tapi tidak terblur) | Foto asli dikembalikan ke disk publik, `pii_status = 'cleared'` |
+
+> ⚠️ **Kategori sensitif** (Dokumen & Surat, Kartu & Identitas, Uang) **tidak bisa** dibuka samarannya. Aturan ini tetap berlaku.
+>
+> ✅ **Elektronik** sudah dikeluarkan dari daftar kategori sensitif (lihat subsection di atas). Foto elektronik boleh dibuka samarannya oleh admin kalau detektor PII keliru.
+
+---
+
+### 📁 File yang Ditambahkan / Diubah
+
+#### Ditambah
+
+| File | Isi |
+|------|-----|
+| `app/Services/ImeiService.php` | Validasi checksum Luhn, normalisasi, format, perbandingan 3 sumber |
+| `app/Services/PiiDetectionService.php` | Memanggil detektor Python, fail-safe |
+| `multiverse/python/pii_detector/main.py` | Script deteksi PII (OCR + Haar Cascade) |
+| `resources/js/services/imei.js` | Validasi IMEI di browser (sinkron dengan backend) |
+| `database/migrations/2026_11_16_083901_add_imei_and_pii_detection_to_reports.php` | Kolom baru di tabel `reports` |
+
+#### Diubah
+
+| File | Perubahan |
+|------|-----------|
+| `app/Services/PhotoPrivacyService.php` | Integrasi deteksi PII + `restorePublic()` untuk membuka samaran |
+| `app/Services/MatchScoreService.php` | IMEI sama → skor 100% |
+| `app/Helpers/NotificationHelper.php` | Notifikasi "🎯 Nomor Seri Cocok" |
+| `app/Http/Controllers/ReportController.php` | Validasi IMEI + kondisi Electronics + hapus duplikasi blok |
+| `app/Http/Controllers/ClaimController.php` | Validasi IMEI penglaim + kirim perbandingan 3 nilai |
+| `app/Models/Report.php` | Kolom baru, `$hidden`, accessor `has_reported_imei` |
+| `routes/web.php` | Catat IMEI admin + perbandingan + route koreksi samaran + data privasi ke halaman detail |
+| `config/services.php` | Konfigurasi `tesseract` |
+| `resources/js/Pages/Reports/CreateReport.jsx` | Kolom IMEI + checkbox "tidak bisa membaca" |
+| `resources/js/Pages/Reports/EditReport.jsx` | Kolom IMEI + checkbox "tidak bisa membaca" |
+| `resources/js/Pages/Reports/ReportDetail.jsx` | Panel IMEI, panel privasi foto, tombol koreksi admin |
+| `resources/js/Pages/Admin/ClaimDetail.jsx` | Tiga sumber nomor seri berdampingan |
+| `resources/js/Pages/Admin/Dashboard.jsx` | Badge "Foto sensitif" / "Data pribadi terdeteksi" / "IMEI" |
+| `resources/js/Pages/Matching/MatchResult.jsx` | Fix `useParams` (tidak tersedia di Inertia v2) |
+
+---
+
+### 🗄️ Kolom Baru di Tabel `reports`
+
+| Kolom | Tipe | Keterangan |
+|-------|------|------------|
+| `reported_imei` | `string(20)` nullable | IMEI yang dilaporkan (penemu / pemilik) |
+| `imei_unreadable` | `boolean` | Penemu menandai tidak bisa membaca |
+| `imei_verified_at` | `timestamp` nullable | Waktu admin membaca IMEI dari fisik |
+| `pii_detected` | `boolean` | Hasil deteksi data pribadi |
+| `pii_reasons` | `json` nullable | Alasan yang terdeteksi |
+| `pii_status` | `string(20)` | `none` / `detected` / `cleared` / `forced` |
+| `pii_checked_at` | `timestamp` nullable | Waktu pemeriksaan |
+| `pii_check_error` | `string(255)` nullable | Alasan detektor gagal |
+| `photo_blurred` | `boolean` | Foto publik saat ini adalah versi buram |
+| `privacy_override_by` | `foreignId` nullable | Admin yang melakukan koreksi |
+| `privacy_override_at` | `timestamp` nullable | Waktu koreksi |
+
+---
+
+### ⚙️ Konfigurasi
+
+#### `.env`
+
+```dotenv
+PII_DETECTION_ENABLED=true
+TESSERACT_CMD="C:/Program Files/Tesseract-OCR/tesseract.exe"
+```
+
+> Tulis path dengan **garis miring** (`/`). Backslash (`\`) akan membuat Laravel gagal membaca `.env`.
+
+#### Prasyarat Tesseract OCR
+
+Tesseract **harus terinstall** di sistem (bukan pip package):
+
+1. Unduh: https://github.com/UB-Mannheim/tesseract/wiki
+2. Install ke `C:\Program Files\Tesseract-OCR\` (default)
+3. Restart terminal + `php artisan config:clear`
+
+#### Python
+
+```bash
+cd multiverse/python
+venv/Scripts/pip install -r requirements.txt
+```
+
+Isi `requirements.txt` sekarang mencatat semua dependensi (dulu kosong):
+
+```
+numpy==2.5.0
+opencv-python==4.13.0.92
+onnxruntime==1.30.0
+pytesseract==0.3.13
+Pillow==13.0.0
+```
+
+---
+
+### 🧪 Cara Menguji
+
+#### Uji IMEI (backend)
+
+```bash
+php artisan tinker --execute="require base_path('storage/app/t_imei.php');"
+```
+
+#### Uji deteksi PII
+
+Buat dua gambar uji: satu berisi NIK + kata kunci "KARTU TANDA PENDUDUK"/"Kartu Keluarga",
+satu gambar biasa. Lalu:
+
+```bash
+php artisan tinker --execute="require base_path('storage/app/t_pii.php');"
+```
+
+Hasil yang diharapkan:
+- Gambar bersih → `pii_detected=false`, foto tidak buram
+- Gambar NIK → `pii_detected=true`, `photo_blurred=true`, `photo_original` terisi (privat)
+- `restorePublic()` → foto kembali normal, `pii_status='cleared'`
+
+#### Cek cepat tanpa GUI
+
+| Perilaku | Cara cek |
+|----------|----------|
+| IMEI salah checksum ditolak | Isi `reported_imei` 15 digit dengan digit terakhir diubah → muncul error validasi |
+| Kategori Elektronik mewajibkan IMEI | Pilih Elektronik tanpa isi IMEI & tanpa centang "tidak bisa membaca" → ditolak |
+| Notifikasi IMEI cocok | Buat 2 laporan (satu lost, satu found) dengan `reported_imei` sama → setelah verifikasi, muncul notifikasi "🎯 Nomor Seri Cocok" |
+| Foto ber-NIK otomatis buram | Unggah foto berisi NIK ke kategori biasa (mis. Dompet & Tas) → foto otomatis buram + badge di dashboard admin |
+
+---
+
+### 🐛 Catatan Teknis & Batasan
+
+| No | Catatan | Dampak |
+|----|---------|--------|
+| 1 | Deteksi PII menambah **±3–8 detik** per unggah (OCR + Haar Cascade) | Unggah terasa sedikit lebih lambat. Batas waktu proses Python: **30 detik** |
+| 2 | Tesseract OCR hanya membaca **bahasa Inggris** (`eng`) | Teks dokumen Indonesia bisa kurang terbaca. NIK & nomor kartu tetap terdeteksi karena berupa angka |
+| 3 | Kata kunci dokumen butuh **minimal 2** kata kunci | Foto KTP yang hanya terbaca satu kata kunci mungkin lolos. Admin bisa menanganinya manual lewat tombol "Samarkan foto" |
+| 4 | `pytesseract` **hanya wrapper** — butuh Tesseract binary terpisah | Kalau binary tidak ada → detektor gagal → foto disamarkan (fail-safe) |
+| 5 | Deteksi wajah memakai Haar Cascade frontal | Wajah samping / tertutup bisa tidak terdeteksi |
+| 6 | Foto asli yang disamarkan **tidak dihapus** dari disk privat | Ini memang tujuannya — supaya admin masih bisa melihat & mengoreksi |
+| 7 | `reported_imei` ada di `$hidden` model | Nilai IMEI tidak ikut terkirim ke browser. Admin/pemilik mendapatkannya lewat props khusus di halaman detail |
+
+---
+
+### 🗓️ Kronologi Perubahan
+
+| Commit | Isi |
+|--------|-----|
+| `2026_11_16_083901` (migration) | Menambah kolom IMEI + deteksi PII di `reports` |
+| — | Menambah `ImeiService`, `PiiDetectionService`, `pii_detector/main.py`, `services/imei.js` |
+| — | Integrasi ke `ReportController`, `ClaimController`, `PhotoPrivacyService`, `MatchScoreService`, `NotificationHelper` |
+| — | Route koreksi samaran admin + route catat IMEI fisik |
+| — | Frontend: form IMEI, panel privasi foto, tiga kolom perbandingan, badge dashboard |
+| — | Fix `MatchResult.jsx` (`useParams` tidak ada di Inertia v2) + route `Reports/MatchResult` → `Matching/MatchResult` |
+
+---
+
+## 📌 Update Progres Terbaru (November 2026) — Siklus Barang Temuan 30 Hari
+
+### ❓ Permasalahan dari Guru
+
+> "Kalau ada laporan penemuan, misal 30 hari tidak ada yang klaim, mau diapakan barang ini?
+> Apakah laporan penemuan yang 30 hari tidak ada yang klaim akan hilang, barangnya disimpan
+> di kelurahan, atau jadi milik negara?"
+
+### 🎯 Keputusan Sistem
+
+Sistem memakai pola **gudang kepabeanan**, dengan tiga prinsip yang dijaga:
+
+1. **Barang temuan TIDAK pernah jadi "milik negara".** Konsep itu milik kepabeanan
+   (barang yang tidak diambil pemilik dalam batas waktu). Untuk barang warga,
+   "milik negara" tanpa prosedur formal justru membuka masalah: siapa yang
+   bertanggung jawab, dan dasar hukumnya apa.
+2. **Barang TIDAK pernah hilang.** Status "kedaluwarsa" hanya berarti masa klaim
+   sudah habis — barangnya masih ada di kantor kelurahan.
+3. **Barang tidak boleh kembali ke penemu.** Kalau barangnya sudah lewat masa klaim
+   lalu dikembalikan ke yang menemukannya, secara hukum berisiko masuk ranah
+   pengambilan barang milik orang lain. Jadi liberação hanya lewat berita acara.
+
+### 🔄 Alur Barang Temuan
+
+```
+Hari 1..30   MASA KLAIM AKTIF
+             Barang disimpan di kantor kelurahan, pemilik bisa mengklaim.
+             Masa klaim dihitung dari waktu barang DITERIMA di kantor.
+
+Hari ~25     PERINGATAN ke admin kelurahan + penemu barang.
+
+Hari 30      MASA KLAIM DITUTUP -> status "Kedaluwarsa"
+             Barang BUKAN hilang dan BUKAN milik negara.
+             Pemilik masih bisa MENEBUS sampai barang benar-benar dilepas.
+
+Hari 37+     TINDAK LANJUT -> berita acara -> barang dilepas ->
+             data sensitif dihapus -> tersisa arsip ringkas.
+```
+
+### 🧩 Matriks Tindak Lanjut (rekomendasi per kategori)
+
+| Jenis Barang | Tindak Lanjut |
+|---|---|
+| KTP, SIM, kartu pelajar, kartu ATM | Dikembalikan ke penerbitnya (Dukcapil, kepolisian, bank, sekolah) atau dimusnahkan dengan saksi. **Bukan "milik negara"** |
+| HP, laptop, dompet berisi uang | Diserahkannya ke instansi yang berwenang (polisi atau pemerintah kota) lewat berita acara |
+| Barang bernilai rendah (tumbler, jaket, payung) | Dihibahkan ke lembaga sosial dengan berita acara |
+| Barang rusak atau berisi data pribadi | Dimusnahkan dengan saksi |
+
+Rekomendasi ini hanya **saran** — admin tetap memutuskan, dan pilihan yang diambil
+dicatat pada berita acara. Barang yang terdeteksi memuat data pribadi (NIK, kartu
+bank, wajah) otomatis disarankan untuk dimusnahkan.
+
+### 📋 Berita Acara
+
+Setiap pelepasan barang WAJIB punya berita acara: jenis tindakan, siapa yang
+menerima, instansi/lembaga mana, siapa saksinya, kapan, dan bukti fotonya.
+
+Saksi minimal 1 orang (bisa dikonfigurasi). Pelepasan barang **diblokir** kalau
+masih ada klaim yang pending/disetujui — klaimnya harus diselesaikan dulu.
+
+### 🔓 Klaim Tebus (Redemption)
+
+Kalau masa klaim sudah habis tapi pemilik asli akhirnya datang, ia tetap boleh
+menebus barang di kantor kelurahan. Klaim ini ditandai `is_redemption = true`
+supaya admin tahu ini pelepasan barang yang tertunda, bukan klaim biasa.
+Setelah barang diserahkan, laporan ditutup dengan `resolution_type = 'claimed'`.
+
+### 📣 Papan Barang Temuan (Publik)
+
+Rute `/barang-temuan` — daftar publik barang temuan yang masih aktif masa
+klaimnya. **Tanpa pengumuman ini, masa klaim 30 hari tidak bermakna:** tidak ada
+yang tahu barang tersebut ada, sehingga "tidak ada yang mengklaim" bukan berarti
+tidak ada pemiliknya.
+
+Yang dijaga di halaman publik:
+- Hanya laporan temuan yang sudah diverifikasi admin.
+- Ciri khusus, nomor seri/IMEI, dan data pribadi **tidak pernah** ikut ke publik.
+- Kategori berisi identitas (KTP, kartu, uang) fotonya ditampilkan buram.
+- Barang yang sudah dilepas tidak muncul lagi.
+
+### ⚙️ Konfigurasi (`.env`)
+
+```dotenv
+CLAIM_WINDOW_DAYS=30          # lama masa klaim (hari)
+CLAIM_EXPIRY_REMINDER_DAYS=5  # peringatan H-5
+CLAIM_ESCALATION_DAYS=7       # eskalasi ke super admin
+PURGE_SENSITIVE_ON_RELEASE=true
+MINIMUM_WITNESSES=1
+```
+
+Scheduler: `reports:check-expiry` dijadwalkan setiap hari pukul 06:15
+(`routes/console.php`).
+
+### 📁 File yang Ditambahkan / Diubah
+
+| File | Isi |
+|---|---|
+| `app/Services/ClaimWindowService.php` | Masa klaim, kedaluwarsa, rekomendasi tindakan, pembersihan data sensitif |
+| `app/Console/Commands/CheckReportExpiry.php` | Peringatan H-5, penandaan kedaluwarsa, eskalasi |
+| `app/Http/Controllers/Admin/ReportFollowupController.php` | Berita acara + pelepasan barang |
+| `app/Http/Controllers/PublicBoardController.php` | Papan barang temuan publik |
+| `resources/js/Pages/Admin/ReportFollowup.jsx` | Form berita acara |
+| `resources/js/Pages/Public/FoundBoard.jsx` | Papan barang temuan publik |
+| `database/migrations/2026_11_18_120000_fix_claim_window_backfill.php` | Koreksi backfill masa klaim |
+| `tests/Feature/ClaimWindowTest.php` | 18 test untuk seluruh siklus |
+
+### 🐛 Bug yang Ditemukan & Diperbaiki
+
+| No | Bug | Dampak |
+|---|---|---|
+| 1 | `openWindow()` tidak pernah dipanggil | Masa klaim tidak pernah terbuka |
+| 2 | `ReportFollowupController` tidak meng-import base `Controller` | Fatal error saat halaman berita acara dibuka |
+| 3 | Route berita acara tidak terdaftar di `routes/web.php` | 404 |
+| 4 | `reports:check-expiry` tidak dijadwalkan | Masa klaim tidak pernah berakhir |
+| 5 | Migration backfill mengisi `claim_deadline = now()` | Laporan lama langsung kedaluwarsa tanpa pernah diberi tahu |
+| 6 | `is_redemption` ada di DB tapi tidak dipakai | Fitur tebus tidak bisa jalan |
+| 7 | Halaman `Admin/ReportFollowup.jsx` tidak ada | Controller merender halaman yang tidak ada |
+
+### 🧪 Cara Menguji
+
+```bash
+php artisan test tests/Feature/ClaimWindowTest.php
+```
+
+Untuk mencoba siklus penuh secara manual:
+
+```bash
+# Paksa masa klaim hampir habis (dalam 3 hari)
+php artisan tinker --execute="App\Models\Report::find(49)->update(['claim_deadline' => now()->addDays(3)]);"
+
+# Jalankan pengecekan (kirim peringatan)
+php artisan reports:check-expiry
+
+# Paksa lewat masa klaim
+php artisan tinker --execute="App\Models\Report::find(49)->update(['claim_deadline' => now()->subDay()]);"
+php artisan reports:check-expiry
+```
+
+Lalu buka `/admin/reports/49/followup` sebagai admin kelurahan untuk mencatat
+berita acara.

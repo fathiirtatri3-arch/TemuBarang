@@ -18,6 +18,20 @@ class RegistrationTest extends TestCase
 
     public function test_new_users_can_register(): void
     {
+        // Registrasi hanya menerima akun Gmail (lihat RegisteredUserController).
+        $response = $this->post('/register', [
+            'name' => 'Test User',
+            'email' => 'test.user@gmail.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_registration_rejects_non_gmail_email(): void
+    {
         $response = $this->post('/register', [
             'name' => 'Test User',
             'email' => 'test@example.com',
@@ -25,7 +39,7 @@ class RegistrationTest extends TestCase
             'password_confirmation' => 'password',
         ]);
 
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertSessionHasErrors('email');
+        $this->assertGuest();
     }
 }

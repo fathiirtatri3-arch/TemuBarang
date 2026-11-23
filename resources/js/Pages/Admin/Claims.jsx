@@ -344,6 +344,11 @@ export default function AdminClaims() {
                                                                 {claim.handed_over_at ? 'Sudah diserahkan' : 'Menunggu pengambilan'}
                                                             </span>
                                                         )}
+                                                        {claim.is_redemption && (
+                                                            <span className="inline-block mt-1 mr-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">
+                                                                Klaim Tebus
+                                                            </span>
+                                                        )}
                                                         {!claim.can_decide && (
                                                             <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
                                                                 Hanya info
