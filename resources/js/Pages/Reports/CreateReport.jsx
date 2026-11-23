@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm, Link, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PetaSambikerep from '@/Components/GoogleMap';
+import { isValidImei, imeiErrorMessage, formatImei } from '@/services/imei';
 
 export default function CreateReport() {
     const [photoPreview, setPhotoPreview] = useState(null);
@@ -28,7 +29,14 @@ export default function CreateReport() {
         latitude: '',
         longitude: '',
         secret_feature: '',
+        reported_imei: '',
+        imei_unreadable: false,
     });
+
+    // Barang elektronik memakai nomor seri/IMEI sebagai bukti kepemilikan
+    const isElectronics = data.category === 'Elektronik';
+    const imeiRequired = data.type === 'found' && isElectronics;
+    const imeiPreview = formatImei(data.reported_imei);
     
     // Real-time validation
     useEffect(() => {
@@ -157,8 +165,28 @@ export default function CreateReport() {
             return;
         }
 
-        if (data.type === 'found' && (data.secret_feature || '').trim().length < 5) {
+        // Ciri khusus rahasia hanya untuk barang temuan NON-elektronik.
+        // Untuk elektronik, wajib diisi nomor seri/IMEI.
+        if (data.type === 'found' && !isElectronics && (data.secret_feature || '').trim().length < 5) {
             showToast('Isi ciri khusus rahasia barang temuan (minimal 5 karakter)', 'error');
+            return;
+        }
+
+        // Nomor seri / IMEI untuk barang elektronik
+        if (imeiRequired && !data.imei_unreadable) {
+            if (!data.reported_imei) {
+                showToast('Isi nomor seri/IMEI perangkat, atau tandai "tidak bisa membaca"', 'error');
+                return;
+            }
+            if (!isValidImei(data.reported_imei)) {
+                showToast(imeiErrorMessage(data.reported_imei), 'error');
+                return;
+            }
+        }
+
+        // Validate juga kalau diisi opsional (laporan barang hilang)
+        if (!imeiRequired && data.reported_imei && !isValidImei(data.reported_imei)) {
+            showToast(imeiErrorMessage(data.reported_imei), 'error');
             return;
         }
 
@@ -193,7 +221,7 @@ export default function CreateReport() {
             onError: (errors) => {
                 console.error('Submit errors:', errors);
                 showToast(
-                    errors.error || errors.item_name || errors.description || errors.photo || errors.latitude || errors.secret_feature || 'Gagal mengirim laporan. Cek kembali data Anda.',
+                    errors.error || errors.item_name || errors.description || errors.photo || errors.latitude || errors.secret_feature || errors.reported_imei || 'Gagal mengirim laporan. Cek kembali data Anda.',
                     'error'
                 );
             },
@@ -362,10 +390,16 @@ export default function CreateReport() {
                                             <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">expand_more</span>
                                         </div>
                                         {errors.category && <p className="mt-1 text-xs text-red-500">{errors.category}</p>}
-                                        {['Elektronik', 'Dokumen & Surat', 'Kartu & Identitas', 'Uang'].includes(data.category) && (
+                                        {['Dokumen & Surat', 'Kartu & Identitas', 'Uang'].includes(data.category) && (
                                             <p className="mt-1.5 text-xs text-slate-600 flex items-start gap-1.5">
                                                 <span className="material-symbols-outlined text-sm text-slate-500">visibility_off</span>
-                                                <span>Foto kategori ini disamarkan otomatis untuk publik. Admin kelurahan tetap melihat foto aslinya.</span>
+                                                <span>Foto kategori ini disamarkan otomatis untuk publik karena berisi data identitas. Admin kelurahan tetap melihat foto aslinya.</span>
+                                            </p>
+                                        )}
+                                        {data.category === 'Elektronik' && (
+                                            <p className="mt-1.5 text-xs text-slate-600 flex items-start gap-1.5">
+                                                <span className="material-symbols-outlined text-sm text-slate-500">photo_camera</span>
+                                                <span>Foto barang elektronik ditampilkan normal agar mudah dikenali. Kalau foto ini memuat data pribadi (mis. layar KTP), sistem akan menyamarkannya secara otomatis.</span>
                                             </p>
                                         )}
                                     </div>
@@ -502,28 +536,130 @@ export default function CreateReport() {
                                                 </p>
                                             </div>
 
-                                            <div>
-                                                <label className="block font-semibold text-sm mb-2.5 text-gray-800 px-1">
-                                                    Ciri Khusus Rahasia <span className="text-red-500">*</span>
-                                                </label>
-                                                <div className="relative group">
-                                                    <span className="material-symbols-outlined absolute left-4 top-4 text-gray-400 group-focus-within:text-[#185FA5] transition-colors">lock</span>
-                                                    <textarea
-                                                        value={data.secret_feature}
-                                                        onChange={(e) => setData('secret_feature', e.target.value)}
-                                                        className={`w-full pl-12 pr-5 py-4 rounded-2xl border ${
-                                                            errors.secret_feature ? 'border-red-500' : 'border-gray-200'
-                                                        } bg-white outline-none focus:ring-4 focus:ring-blue-500 transition-all duration-300 resize-none`}
-                                                        placeholder="Contoh: wallpaper HP foto kucing, isi dompet ada struk Indomaret, ada goresan di bagian dalam tutup"
-                                                        rows="3"
-                                                        maxLength="255"
-                                                    />
+                                            {!isElectronics && (
+                                                <div>
+                                                    <label className="block font-semibold text-sm mb-2.5 text-gray-800 px-1">
+                                                        Ciri Khusus Rahasia <span className="text-red-500">*</span>
+                                                    </label>
+                                                    <div className="relative group">
+                                                        <span className="material-symbols-outlined absolute left-4 top-4 text-gray-400 group-focus-within:text-[#185FA5] transition-colors">lock</span>
+                                                        <textarea
+                                                            value={data.secret_feature}
+                                                            onChange={(e) => setData('secret_feature', e.target.value)}
+                                                            className={`w-full pl-12 pr-5 py-4 rounded-2xl border ${
+                                                                errors.secret_feature ? 'border-red-500' : 'border-gray-200'
+                                                            } bg-white outline-none focus:ring-4 focus:ring-blue-500 transition-all duration-300 resize-none`}
+                                                            placeholder="Contoh: wallpaper HP foto kucing, isi dompet ada struk Indomaret, ada goresan di bagian dalam tutup"
+                                                            rows="3"
+                                                            maxLength="255"
+                                                        />
+                                                    </div>
+                                                    <p className="mt-1.5 text-xs text-gray-500">
+                                                        🔒 Tidak ditampilkan ke publik. Hanya dilihat admin kelurahan untuk mencocokkan jawaban pemilik saat klaim. Jangan tulis ciri ini di kolom Deskripsi, karena Deskripsi tampil publik.
+                                                    </p>
+                                                    {errors.secret_feature && <p className="mt-1 text-xs text-red-500">{errors.secret_feature}</p>}
                                                 </div>
-                                                <p className="mt-1.5 text-xs text-gray-500">
-                                                    🔒 Tidak ditampilkan ke publik. Hanya dilihat admin kelurahan untuk mencocokkan jawaban pemilik saat klaim. Jangan tulis ciri ini di kolom Deskripsi, karena Deskripsi tampil publik.
-                                                </p>
-                                                {errors.secret_feature && <p className="mt-1 text-xs text-red-500">{errors.secret_feature}</p>}
+                                            )}
+
+                                            {/* Barang elektronik: nomor seri / IMEI menggantikan ciri rahasia */}
+                                            {isElectronics && (
+                                                <div className="rounded-2xl border-2 border-blue-100 bg-blue-50/50 p-4 space-y-3">
+                                                    <div className="flex gap-3">
+                                                        <span className="material-symbols-outlined text-[#185FA5]">pin</span>
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-gray-800">Nomor Seri / IMEI</p>
+                                                            <p className="text-xs text-gray-600 mt-0.5">
+                                                                Untuk barang elektronik, nomor seri adalah bukti kepemilikan yang paling kuat. Admin akan membacanya langsung dari perangkat dan membandingkannya.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block font-semibold text-sm mb-2 text-gray-800">
+                                                            Nomor Seri / IMEI <span className="text-red-500">*</span>
+                                                        </label>
+                                                        <div className="relative group">
+                                                            <span className="material-symbols-outlined absolute left-4 top-3.5 text-gray-400 group-focus-within:text-[#185FA5] transition-colors">numbers</span>
+                                                            <input
+                                                                type="text"
+                                                                inputMode="numeric"
+                                                                value={data.reported_imei}
+                                                                onChange={(e) => setData('reported_imei', e.target.value.replace(/[^\d\s-]/g, ''))}
+                                                                disabled={data.imei_unreadable}
+                                                                className={`w-full pl-12 pr-5 py-3.5 rounded-2xl border ${
+                                                                    errors.reported_imei ? 'border-red-500' : 'border-gray-200'
+                                                                } bg-white outline-none focus:ring-4 focus:ring-blue-500 transition-all duration-300 disabled:bg-gray-100 disabled:text-gray-400`}
+                                                                placeholder="352099001761481 (15 digit)"
+                                                                maxLength="25"
+                                                            />
+                                                        </div>
+                                                        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                                                            <span>Ditulis sebagai: <strong className="text-gray-700">{imeiPreview || '—'}</strong></span>
+                                                            {imeiPreview && !isValidImei(data.reported_imei) && (
+                                                                <span className="text-red-500 font-medium">checksum belum valid</span>
+                                                            )}
+                                                        </div>
+                                                        {errors.reported_imei && <p className="mt-1 text-xs text-red-500">{errors.reported_imei}</p>}
+                                                    </div>
+
+                                                    <label className="flex items-start gap-3 cursor-pointer select-none">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={data.imei_unreadable}
+                                                            onChange={(e) => {
+                                                                setData('imei_unreadable', e.target.checked);
+                                                                if (e.target.checked) setData('reported_imei', '');
+                                                            }}
+                                                            className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#185FA5] focus:ring-[#185FA5]"
+                                                        />
+                                                        <span className="text-sm text-gray-700">
+                                                            <strong>Tidak bisa membaca</strong> — perangkat mati, terkunci, atau nomornya sudah aus.
+                                                            <span className="block text-xs text-gray-500 mt-0.5">
+                                                                Admin akan membaca nomornya sendiri saat menerima barang di kantor kelurahan.
+                                                            </span>
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Barang hilang kategori elektronik: IMEI opsional sebagai petunjuk */}
+                                    {data.type === 'lost' && isElectronics && (
+                                        <div className="col-span-2 rounded-2xl border-2 border-blue-100 bg-blue-50/50 p-4 space-y-3">
+                                            <div className="flex gap-3">
+                                                <span className="material-symbols-outlined text-[#185FA5]">numbers</span>
+                                                <div>
+                                                    <p className="text-sm font-semibold text-gray-800">Nomor Seri / IMEI <span className="text-gray-500 font-normal">(opsional)</span></p>
+                                                    <p className="text-xs text-gray-600 mt-0.5">
+                                                        Kalau Anda masih remember nomor serinya, isi di sini. Ini akan sangat membantu proses pencocokan.
+                                                    </p>
+                                                </div>
                                             </div>
+
+                                            <div className="relative group">
+                                                <span className="material-symbols-outlined absolute left-4 top-3.5 text-gray-400 group-focus-within:text-[#185FA5] transition-colors">numbers</span>
+                                                <input
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    value={data.reported_imei}
+                                                    onChange={(e) => setData('reported_imei', e.target.value.replace(/[^\d\s-]/g, ''))}
+                                                    className={`w-full pl-12 pr-5 py-3.5 rounded-2xl border ${
+                                                        errors.reported_imei ? 'border-red-500' : 'border-gray-200'
+                                                    } bg-white outline-none focus:ring-4 focus:ring-blue-500 transition-all duration-300`}
+                                                    placeholder="352099001761481 (15 digit)"
+                                                    maxLength="25"
+                                                />
+                                            </div>
+                                            {imeiPreview && (
+                                                <p className="text-xs text-gray-500">
+                                                    Ditulis sebagai: <strong className="text-gray-700">{imeiPreview}</strong>
+                                                    {!isValidImei(data.reported_imei) && (
+                                                        <span className="text-red-500 font-medium ml-2">checksum belum valid</span>
+                                                    )}
+                                                </p>
+                                            )}
+                                            {errors.reported_imei && <p className="mt-1 text-xs text-red-500">{errors.reported_imei}</p>}
                                         </div>
                                     )}
 

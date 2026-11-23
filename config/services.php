@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Tesseract OCR (deteksi data pribadi otomatis)
+    |--------------------------------------------------------------------------
+    |
+    | Lokasi binary Tesseract untuk PiiDetectionService. Kalau Tesseract belum
+    | terpasang, detektor otomatis akan gagal dan foto otomatis disamarkan
+    | demi keamanan (fail-safe), lalu alasannya tercatat di laporan.
+    |
+    */
+
+    'tesseract' => [
+        'path' => env('TESSERACT_CMD', 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'),
+        'enabled' => (bool) env('PII_DETECTION_ENABLED', true),
+    ],
+
 ];

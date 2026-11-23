@@ -279,16 +279,18 @@ export default function AdminDashboard() {
         pending: reports.filter(r => r.status === 'pending').length,
         verified: reports.filter(r => r.status === 'verified').length,
         resolved: reports.filter(r => r.status === 'resolved').length,
+        expired: reports.filter(r => r.status === 'expired').length,
         lost: reports.filter(r => r.type === 'lost').length,
         found: reports.filter(r => r.type === 'found').length,
     };
-    
+
     const getStatusBadge = (status) => {
         switch(status) {
             case 'pending': return { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Menunggu' };
             case 'verified': return { bg: 'bg-green-100', text: 'text-green-700', label: 'Terverifikasi' };
             case 'resolved': return { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Selesai' };
             case 'matched': return { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Serah Terima' };
+            case 'expired': return { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Kedaluwarsa' };
             case 'rejected': return { bg: 'bg-red-100', text: 'text-red-700', label: 'Ditolak' };
             default: return { bg: 'bg-gray-100', text: 'text-gray-800', label: status };
         }
@@ -561,6 +563,7 @@ export default function AdminDashboard() {
                                     <option value="verified">✅ Terverifikasi</option>
                                     <option value="resolved">🎉 Selesai</option>
                                     <option value="matched">🤝 Serah Terima</option>
+                                    <option value="expired">⏳ Kedaluwarsa</option>
                                     <option value="rejected">🚫 Ditolak</option>
                                 </select>
                                 <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-sm">expand_more</span>
@@ -660,6 +663,19 @@ export default function AdminDashboard() {
                                                             <div>
                                                                 <p className="text-sm font-semibold text-gray-900">{report.item_name}</p>
                                                                 <p className="text-xs text-gray-400">ID: #{report.id} • {report.category || 'Tidak ada kategori'}</p>
+                                                                {/* Badge privasi foto */}
+                                                                {(report.is_photo_blurred || report.photo_blurred) && (
+                                                                    <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                                                        <span className="material-symbols-outlined text-[12px]">privacy_tip</span>
+                                                {report.photo_sensitive ? 'Foto sensitif' : 'Data pribadi terdeteksi'}
+                                                                    </span>
+                                                                )}
+                                                                {report.has_reported_imei && (
+                                                                    <span className="inline-flex items-center gap-1 mt-1 ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                                                                        <span className="material-symbols-outlined text-[12px]">numbers</span>
+                                                                        IMEI
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </td>
@@ -720,13 +736,21 @@ export default function AdminDashboard() {
                                                                 </button>
                                                             )}
                                                             {report.status === 'verified' && report.type === 'lost' && (
-                                                                <button 
+                                                                <button
                                                                     onClick={() => updateStatus(report.id, 'resolved')}
                                                                     disabled={isProcessing}
                                                                     className="px-3 py-1.5 border border-[#185FA5] text-[#185FA5] rounded-lg text-xs font-semibold hover:bg-[#185FA5]/5 transition disabled:opacity-50"
                                                                 >
                                                                     Selesaikan
                                                                 </button>
+                                                            )}
+                                                            {report.type === 'found' && report.status === 'expired' && !report.released_at && (
+                                                                <Link
+                                                                    href={`/admin/reports/${report.id}/followup`}
+                                                                    className="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-semibold hover:bg-amber-700 transition"
+                                                                >
+                                                                    Tindak Lanjut
+                                                                </Link>
                                                             )}
                                                             <Link 
                                                                 href={`/reports/${report.id}`}

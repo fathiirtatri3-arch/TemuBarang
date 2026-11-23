@@ -115,6 +115,19 @@ class MatchScoreService
      */
     public function score(Report $a, Report $b): array
     {
+        // Nomor seri/IMEI yang sama = bukti kepemilikan paling kuat.
+        // Langsung 100% tanpa perlu melihat nama atau foto.
+        if ($this->imeiMatches($a, $b)) {
+            return [
+                'score'            => 100.0,
+                'text_score'       => 100.0,
+                'photo_score'      => 0.0,
+                'label'            => $this->label(100.0),
+                'matched_criteria' => ['imei'],
+                'imei_match'       => true,
+            ];
+        }
+
         $text  = $this->textScore($a, $b);
         $photo = $this->photoScore($a, $b);
 
@@ -126,7 +139,20 @@ class MatchScoreService
             'photo_score'      => $photo,
             'label'            => $this->label($final),
             'matched_criteria' => $text['criteria'],
+            'imei_match'       => false,
         ];
+    }
+
+    /**
+     * Dua laporan dianggap cocok bila nomor seri/IMEI yang dilaporkan identik.
+     */
+    public function imeiMatches(Report $a, Report $b): bool
+    {
+        if (!$a->hasReportedImei() || !$b->hasReportedImei()) {
+            return false;
+        }
+
+        return app(ImeiService::class)->matches($a->reported_imei, $b->reported_imei);
     }
 
     public function label(float $score): string

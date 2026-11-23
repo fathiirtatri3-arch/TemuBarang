@@ -71,6 +71,31 @@ class NotificationHelper
     }
 
     /**
+     * Kirim notifikasi SEKALI per (user + judul + link), bukan per isi pesan.
+     *
+     * Dipakai untuk pengingat yang isinya berubah setiap hari (mis. "sisa 5
+     * hari" -> "sisa 4 hari"). Kalau pencocokan memakai isi pesan, pengingat
+     * itu terkirim ulang tiap hari dan administrator jadi penuh spam.
+     */
+    public static function sendOncePerReport($userId, $title, $message, $type = 'info', $link = null)
+    {
+        $query = Notification::where('user_id', $userId)
+            ->where('title', $title);
+
+        if ($link === null) {
+            $query->whereNull('link');
+        } else {
+            $query->where('link', $link);
+        }
+
+        if ($query->exists()) {
+            return null;
+        }
+
+        return self::send($userId, $title, $message, $type, $link);
+    }
+
+    /**
      * Cek kecocokan untuk laporan yang BARU SAJA diverifikasi.
      * - Hanya laporan berstatus verified yang dicocokkan
      * - Lintas kelurahan (tidak dibatasi wilayah)
@@ -95,11 +120,15 @@ class NotificationHelper
         $scorer = app(MatchScoreService::class);
 
         foreach ($potentialMatches as $match) {
-            // Hemat waktu: skor foto maksimal bernilai 50. Kalau dengan foto 100%
-            // pun skor tak mungkin mencapai ambang, lewati (tidak perlu hitung foto).
-            $text = $scorer->textScore($newReport, $match);
-            if (($text['score'] * 0.50) + 50 < MatchScoreService::NOTIFY_THRESHOLD) {
-                continue;
+            $imeiMatch = $scorer->imeiMatches($newReport, $match);
+
+            if (!$imeiMatch) {
+                // Hemat waktu: skor foto maksimal bernilai 50. Kalau dengan foto 100%
+                // pun skor tak mungkin mencapai ambang, lewati (tidak perlu hitung foto).
+                $text = $scorer->textScore($newReport, $match);
+                if (($text['score'] * 0.50) + 50 < MatchScoreService::NOTIFY_THRESHOLD) {
+                    continue;
+                }
             }
 
             // Skor yang SAMA dengan halaman Pencocokan
@@ -116,13 +145,23 @@ class NotificationHelper
             $foundRegion = $found->region?->name ?? '-';
 
             // 1) Pemilik laporan hilang
-            self::sendOnce(
-                $lost->user_id,
-                '🔍 Potensi Kecocokan Ditemukan',
-                "Barang temuan \"{$found->item_name}\" (Kel. {$foundRegion}) mungkin cocok dengan laporan hilang Anda \"{$lost->item_name}\" (skor {$score}%).",
-                'match',
-                "/reports/{$found->id}"
-            );
+            if ($imeiMatch) {
+                self::sendOnce(
+                    $lost->user_id,
+                    '🎯 Nomor Seri Cocok',
+                    "Nomor seri perangkat pada barang temuan \"{$found->item_name}\" (Kel. {$foundRegion}) SAMA dengan nomor seri yang Anda cantumkan pada laporan hilang \"{$lost->item_name}\". Silakan klaim barang tersebut.",
+                    'match',
+                    "/reports/{$found->id}"
+                );
+            } else {
+                self::sendOnce(
+                    $lost->user_id,
+                    '🔍 Potensi Kecocokan Ditemukan',
+                    "Barang temuan \"{$found->item_name}\" (Kel. {$foundRegion}) mungkin cocok dengan laporan hilang Anda \"{$lost->item_name}\" (skor {$score}%).",
+                    'match',
+                    "/reports/{$found->id}"
+                );
+            }
 
             // 2) Admin kedua wilayah (info), satu kali per admin
             $regionIds = collect([$lost->region_id, $found->region_id])->unique();

@@ -273,7 +273,7 @@ function ReportPanel({ report, type, onZoom, showCompareBadge = false }) {
    HALAMAN UTAMA
    ============================================================ */
 export default function ClaimDetail() {
-    const { claim, lostReport, canVerify = true, decisionRegion, secretFeature = null, canHandover = false, handoverBy = null, serialNumber = null, serialMatch = null } = usePage().props;
+    const { claim, lostReport, canVerify = true, decisionRegion, secretFeature = null, canHandover = false, handoverBy = null, serialNumber = null, serialMatch = null, imeiComparison = null } = usePage().props;
     const [adminNote, setAdminNote] = useState('');
     const [processing, setProcessing] = useState(false);
     const [showVerifyModal, setShowVerifyModal] = useState(false);
@@ -357,6 +357,10 @@ export default function ClaimDetail() {
     };
 
     const statusBadge = getStatusBadge();
+
+    // Klaim "tebus": pengklaim menebus barang yang masa klaimnya sudah habis.
+    // Barang masih tersimpan di kantor kelurahan, jadi ini masih bisa disetujui.
+    const isRedemption = !!claim.is_redemption;
 
     // Jarak antara lokasi temuan dan lokasi hilang (jika kedua koordinat ada)
     const distance =
@@ -746,16 +750,68 @@ export default function ClaimDetail() {
                                                 <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-600 border border-gray-200">Belum bisa dibandingkan</span>
                                             )}
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-                                            <div>
-                                                <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-1">Tercatat admin (dari fisik barang)</p>
-                                                <p className="text-sm font-mono text-slate-900 break-all">{serialNumber || '-'}</p>
+
+                                        {/* Tiga sumber ditampilkan berdampingan */}
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+                                            <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                                                <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-1">
+                                                    Dilaporkan penemu
+                                                </p>
+                                                <p className="text-sm font-mono text-slate-900 break-all">
+                                                    {imeiComparison?.reported || '—'}
+                                                </p>
+                                                <p className="text-[10px] text-slate-400 mt-1">Dari laporan barang temuan</p>
                                             </div>
-                                            <div>
-                                                <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-1">Jawaban pengklaim</p>
-                                                <p className="text-sm font-mono text-slate-900 break-all">{claim.claimant_serial || '-'}</p>
+
+                                            <div className={`p-3 rounded-lg border ${
+                                                imeiComparison?.reported_vs_admin === false
+                                                    ? 'bg-red-50 border-red-200'
+                                                    : 'bg-slate-50 border-slate-200'
+                                            }`}>
+                                                <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-1">
+                                                    Dibaca admin (fisik)
+                                                </p>
+                                                <p className="text-sm font-mono text-slate-900 break-all">
+                                                    {imeiComparison?.admin || '—'}
+                                                </p>
+                                                {imeiComparison?.reported_vs_admin === false && (
+                                                    <p className="text-[10px] text-red-600 font-bold mt-1">⚠️ BEDA dari laporan penemu</p>
+                                                )}
+                                                {imeiComparison?.reported_vs_admin === true && (
+                                                    <p className="text-[10px] text-emerald-600 font-bold mt-1">✓ Sama</p>
+                                                )}
+                                                <p className="text-[10px] text-slate-400 mt-1">Saat terima barang</p>
+                                            </div>
+
+                                            <div className={`p-3 rounded-lg border ${
+                                                imeiComparison?.reported_vs_claimant === false
+                                                    ? 'bg-red-50 border-red-200'
+                                                    : 'bg-blue-50 border-blue-100'
+                                            }`}>
+                                                <p className="text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-1">
+                                                    Jawaban pengklaim
+                                                </p>
+                                                <p className="text-sm font-mono text-slate-900 break-all">
+                                                    {imeiComparison?.claimant || '—'}
+                                                </p>
+                                                {imeiComparison?.reported_vs_claimant === false && (
+                                                    <p className="text-[10px] text-red-600 font-bold mt-1">⚠️ BEDA dari laporan penemu</p>
+                                                )}
+                                                {imeiComparison?.reported_vs_claimant === true && (
+                                                    <p className="text-[10px] text-emerald-600 font-bold mt-1">✓ Sama</p>
+                                                )}
+                                                <p className="text-[10px] text-slate-400 mt-1">Dari formulir klaim</p>
                                             </div>
                                         </div>
+
+                                        {imeiComparison?.all_match && (
+                                            <div className="mt-3 flex gap-2 p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+                                                <span className="material-symbols-outlined text-emerald-600 text-base">verified</span>
+                                                <p className="text-xs text-emerald-800 leading-relaxed">
+                                                    ✅ Tiga sumber nomor seri <strong>sama persis</strong>. Barang ini hampir pasti milik pengklaim.
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -764,6 +820,17 @@ export default function ClaimDetail() {
                                         <span className="material-symbols-outlined text-amber-600 text-base">warning</span>
                                         <span>Barang belum tercatat diterima di kantor kelurahan. Klaim baru bisa disetujui setelah penerimaan dicatat.</span>
                                         <Link href={`/reports/${claim.report?.id}`} className="font-bold underline">Buka laporan temuan</Link>
+                                    </div>
+                                )}
+
+                                {isRedemption && (
+                                    <div className="mt-4 flex flex-wrap items-center gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                                        <span className="material-symbols-outlined text-amber-600 text-base">redeem</span>
+                                        <span>
+                                            Ini adalah klaim <strong>tebus</strong>: masa klaim barang sudah habis, tetapi barang
+                                            masih tersimpan di kantor kelurahan sehingga pemilik aslinya tetap boleh menebusnya.
+                                            Barang TIDAK hilang dan TIDAK menjadi milik negara.
+                                        </span>
                                     </div>
                                 )}
                             </section>

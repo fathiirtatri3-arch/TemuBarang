@@ -9,18 +9,36 @@ use Illuminate\Support\Str;
 /**
  * Melindungi foto laporan.
  *
- * - Kategori sensitif: foto ASLI dipindah ke disk PRIVAT (tidak punya URL publik),
- *   sedangkan publik hanya melihat salinan yang sudah diburamkan.
- * - Foto biasa: metadata (EXIF/GPS) dibuang dan ukurannya dibatasi.
+ * - Kategori sensitif : foto ASLI dipindah ke disk PRIVAT (tidak punya URL publik),
+ *   sedangkan publik hanya melihat salinan yang sudah diburamkan. Tidak bisa
+ *   dibuka kembali oleh admin (kunci keras). Hanya untuk kategori yang berisi
+ *   identitas penting (KTP, KK, SIM, akta, kartu, uang).
+ * - Kategori biasa    : dicek otomatis apakah ada data pribadi (NIK, kartu bank,
+ *   kata kunci dokumen, wajah) memakai Tesseract OCR + Haar Cascade.
+ *   Kalau ada -> diperlakukan sama seperti kategori sensitif, TAPI admin boleh
+ *   membukanya kembali lewat koreksi manual.
+ * - Semua foto        : metadata (EXIF/GPS) dibuang dan ukurannya dibatasi.
  *
- * Kolom reports.photo       = foto yang aman untuk PUBLIK (buram jika sensitif)
- * Kolom reports.photo_original = path foto asli di disk privat (hanya jika sensitif)
+ * Kolom reports.photo        = foto yang aman untuk PUBLIK (buram bila disamarkan)
+ * Kolom reports.photo_original = path foto asli di disk privat (bila ada)
+ * Kolom reports.photo_sensitive = true -> kunci keras (kategori sensitif)
+ * Kolom reports.photo_blurred   = true -> foto publik saat ini adalah versi buram
  */
 class PhotoPrivacyService
 {
-    /** Kategori yang fotonya selalu disamarkan untuk publik */
+    /**
+     * Kategori yang fotonya selalu disamarkan untuk publik.
+     *
+     * Hanya kategori yang isinya benar-benar berisi IDENTITAS PRIBADI orang:
+     * KTP, KK, SIM, akta, kartu, dan uang (yang Sometimes ada nama pemiliknya
+     * tertulis).
+     *
+     * "Elektronik" SENGAJA TIDAK ada di sini. Foto barang elektronik umumnya
+     * hanya menampilkan bodi barangnya, bukan data pribadi pemilik. Kalau
+     * ternyata ada data pribadi (mis. layar menampilkan KTP), itu ditangani
+     * oleh detektor PII otomatis, bukan dengan blur permanen per kategori.
+     */
     public const SENSITIVE_CATEGORIES = [
-        'Elektronik',
         'Dokumen & Surat',
         'Kartu & Identitas',
         'Uang',
@@ -44,16 +62,69 @@ class PhotoPrivacyService
         @ini_set('memory_limit', '256M');
 
         if (self::isSensitiveCategory($report->category)) {
-            $this->protect($report);
-        } elseif ($newUpload) {
-            $this->sanitize($report);
+            $this->protect($report, true);
+            return;
         }
+
+        if (!$newUpload) {
+            return;
+        }
+
+        // Kategori biasa -> cek data pribadi otomatis
+        if ($this->detectPersonalData($report)) {
+            $this->protect($report, false);
+            return;
+        }
+
+        // Tidak ada data pribadi -> tetap buang metadata EXIF/GPS
+        $this->sanitize($report);
+    }
+
+    /**
+     * Jalankan detektor PII. Mengembalikan true bila foto harus disamarkan.
+     * Kalau detektor gagal, hasilnya tetap "harus disamarkan" (fail-safe)
+     * dan alasannya dicatat di laporan.
+     */
+    public function detectPersonalData(Report $report): bool
+    {
+        if (!config('services.tesseract.enabled', true)) {
+            $report->update([
+                'pii_checked_at' => now(),
+                'pii_detected'   => false,
+                'pii_reasons'    => [],
+                'pii_status'     => 'none',
+                'pii_check_error' => null,
+            ]);
+
+            return false;
+        }
+
+        $path = $this->publicPath($report);
+
+        if ($path === null) {
+            return false;
+        }
+
+        $result = app(PiiDetectionService::class)->detect($path);
+
+        $report->update([
+            'pii_checked_at'  => now(),
+            'pii_detected'    => (bool) $result['detected'],
+            'pii_reasons'     => $result['reasons'],
+            'pii_status'      => $result['detected'] ? 'detected' : 'none',
+            'pii_check_error' => $result['error'],
+        ]);
+
+        return (bool) $result['detected'];
     }
 
     /**
      * Pindahkan foto asli ke disk privat dan buat salinan buram untuk publik.
+     *
+     * $hardLock = true  -> kategori sensitif, admin TIDAK boleh membuka samaran
+     * $hardLock = false -> hasil deteksi PII, admin boleh mengoreksi
      */
-    public function protect(Report $report): void
+    public function protect(Report $report, bool $hardLock = true): void
     {
         $public = Storage::disk('public');
 
@@ -84,8 +155,52 @@ class PhotoPrivacyService
         $report->update([
             'photo'           => $publicPath,
             'photo_original'  => $privatePath,
-            'photo_sensitive' => true,
+            'photo_sensitive' => $hardLock,
+            'photo_blurred'   => true,
         ]);
+    }
+
+    /**
+     * Kembalikan foto asli ke disk publik (membuka samaran).
+     * Hanya untuk foto yang disamarkan karena deteksi PII, bukan kategori sensitif.
+     */
+    public function restorePublic(Report $report): bool
+    {
+        if (empty($report->photo_original)) {
+            return false;
+        }
+
+        $binary = Storage::disk('local')->get($report->photo_original);
+
+        if ($binary === null || $binary === '') {
+            return false;
+        }
+
+        // Buang metadata EXIF/GPS juga saat membuka samaran
+        $clean = $this->reencode($binary, 1600) ?? $binary;
+
+        $extension = pathinfo($report->photo_original, PATHINFO_EXTENSION) ?: 'jpg';
+        $publicPath = 'reports/' . Str::uuid() . '.' . $extension;
+
+        Storage::disk('public')->put($publicPath, $clean);
+
+        // Hapus versi buram yang tampil publik (kalau ada)
+        if (!empty($report->photo)) {
+            Storage::disk('public')->delete($report->photo);
+        }
+
+        // Foto asli sudah tidak perlu disimpan privat
+        Storage::disk('local')->delete($report->photo_original);
+
+        $report->update([
+            'photo'           => $publicPath,
+            'photo_original'  => null,
+            'photo_sensitive' => false,
+            'photo_blurred'   => false,
+            'pii_status'      => 'cleared',
+        ]);
+
+        return true;
     }
 
     /**
@@ -110,6 +225,20 @@ class PhotoPrivacyService
         $public->delete($report->photo);
 
         $report->update(['photo' => $newPath]);
+    }
+
+    /**
+     * Path absolut file foto publik (untuk dikirim ke detektor PII).
+     */
+    public function publicPath(Report $report): ?string
+    {
+        if (empty($report->photo)) {
+            return null;
+        }
+
+        $path = storage_path('app/public/' . $report->photo);
+
+        return file_exists($path) ? $path : null;
     }
 
     /**

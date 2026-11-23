@@ -15,7 +15,13 @@ public function store(Request $request, $reportId)
 {
     $user = auth()->user();
     $report = Report::with('user')->findOrFail($reportId);
-    
+
+    // Masa klaim yang sudah lewat -> tandai Kedaluwarsa dulu. Tanpa ini,
+    // klaim terhadap barang yang lewat 30 hari dianggap klaim biasa,
+    // padahal sebenarnya itu klaim TEBUS.
+    app(\App\Services\ClaimWindowService::class)->syncExpired($report);
+    $report->refresh();
+
     if ($report->type !== 'found') {
         return response()->json(['message' => 'Hanya laporan temuan yang bisa diklaim.'], 422);
     }
@@ -24,10 +30,19 @@ public function store(Request $request, $reportId)
         return response()->json(['message' => 'Anda tidak bisa mengklaim barang sendiri.'], 422);
     }
 
-    if ($report->status !== 'verified') {
+    if (!in_array($report->status, ['verified', 'expired'], true)) {
         return response()->json(['message' => 'Laporan ini tidak bisa diklaim saat ini.'], 422);
     }
-    
+
+    // Masa klaim sudah habis -> ini klaim TEbus. Barang masih tersimpan di
+    // kantor kelurahan dan pemilik tetap boleh menebusnya sampai barang
+    // benar-benar dilepas.
+    $isRedemption = $report->status === 'expired';
+
+    if (!empty($report->released_at)) {
+        return response()->json(['message' => 'Barang pada laporan ini sudah dilepas dan tidak bisa diklaim lagi.'], 422);
+    }
+
     $existingClaim = Claim::where('report_id', $reportId)
         ->where('claimant_id', $user->id)
         ->whereIn('status', ['pending', 'approved'])
@@ -51,11 +66,20 @@ public function store(Request $request, $reportId)
     $lost = Report::where('id', $request->lost_report_id)
         ->where('user_id', $user->id)
         ->where('type', 'lost')
-        ->where('status', 'verified')
+        ->whereIn('status', ['verified', 'matched'])
         ->first();
 
     if (!$lost) {
         return response()->json(['message' => 'Pilih laporan barang hilang Anda yang sudah terverifikasi.'], 422);
+    }
+
+    // Satu laporan hilang hanya boleh dipakai satu klaim yang masih berjalan.
+    $lostAlreadyClaimed = Claim::where('lost_report_id', $lost->id)
+        ->whereIn('status', ['pending', 'approved'])
+        ->exists();
+
+    if ($lostAlreadyClaimed) {
+        return response()->json(['message' => 'Laporan barang hilang ini sedang digunakan untuk klaim lain.'], 422);
     }
 
     // Ciri khusus: jika penemu mencatat ciri rahasia, pengklaim wajib menjawab
@@ -65,6 +89,17 @@ public function store(Request $request, $reportId)
     // Barang elektronik: pengklaim wajib menyebut nomor seri/IMEI
     if ($report->category === 'Elektronik' && mb_strlen($serial) < 5) {
         return response()->json(['message' => 'Sebutkan nomor seri/IMEI perangkat ini.'], 422);
+    }
+
+    // Untuk barang elektronik, nomor seri harus berupa IMEI yang sah (15 digit + checksum)
+    if ($report->category === 'Elektronik') {
+        $imeiService = app(\App\Services\ImeiService::class);
+
+        if (!$imeiService->isValidImei($serial)) {
+            return response()->json([
+                'message' => $imeiService->validationMessage($serial),
+            ], 422);
+        }
     }
 
     if (!empty($report->secret_feature) && mb_strlen($proof) < 5) {
@@ -82,16 +117,20 @@ public function store(Request $request, $reportId)
         'owner_id' => $report->user_id,
         'status' => 'pending',
         'message' => $request->message,
+        'is_redemption' => $isRedemption,
+        'redeemed_at' => $isRedemption ? now() : null,
     ]);
-    
+
     // Admin wilayah barang temuan (pemutus) + admin wilayah laporan hilang (info)
     $decisionAdmins = NotificationHelper::adminsOfRegion($report->region_id);
 
     foreach ($decisionAdmins as $admin) {
         NotificationHelper::send(
             $admin->id,
-            '📦 Permintaan Klaim Barang',
-            "{$user->name} ingin mengklaim \"{$report->item_name}\". Klaim ini menunggu keputusan Anda.",
+            $isRedemption ? '📦 Permintaan Tebus Barang' : '📦 Permintaan Klaim Barang',
+            $isRedemption
+                ? "{$user->name} ingin menebus barang \"{$report->item_name}\" yang masa klaimnya sudah habis. Barang masih tersimpan di kantor kelurahan - please tangani."
+                : "{$user->name} ingin mengklaim \"{$report->item_name}\". Klaim ini menunggu keputusan Anda.",
             'claim',
             "/admin/claims/{$claim->id}"
         );
@@ -210,7 +249,6 @@ public function verify(Request $request, $id)
                 ->where('user_id', $claim->claimant_id)
                 ->update(['status' => 'matched']);
         }
-
         // Klaim lain yang masih menunggu untuk barang yang sama otomatis ditolak
         $competing = Claim::where('report_id', $claim->report_id)
             ->where('id', '!=', $claim->id)
@@ -312,6 +350,14 @@ public function verify(Request $request, $id)
             $claim->lostReport->setAttribute('can_view_original', $user->canViewOriginalPhoto($claim->lostReport));
         }
 
+        // Tiga sumber nomor seri: dilaporkan penemu, dibaca admin, jawaban penglaim
+        $imeiService = app(\App\Services\ImeiService::class);
+        $imeiComparison = $imeiService->compare(
+            $claim->report?->reported_imei,
+            $claim->report?->serial_number,
+            $claim->claimant_serial
+        );
+
         return Inertia::render('Admin/ClaimDetail', [
             'claim' => $claim,
             'lostReport' => $claim->lostReport,
@@ -323,6 +369,11 @@ public function verify(Request $request, $id)
             'serialMatch' => ($canVerify && $claim->report?->serial_number && $claim->claimant_serial)
                 ? $this->normalizeSerial($claim->report->serial_number) === $this->normalizeSerial($claim->claimant_serial)
                 : null,
+            // Data nomor seri untuk ditampilkan berdampingan
+            'imeiComparison' => $canVerify ? $imeiComparison : null,
+            'reportedImeiFormatted' => $canVerify ? $imeiService->format($claim->report?->reported_imei) : null,
+            'adminSerialFormatted' => $canVerify ? $imeiService->format($claim->report?->serial_number) : null,
+            'claimantSerialFormatted' => $canVerify ? $imeiService->format($claim->claimant_serial) : null,
             'canHandover' => $canVerify && $claim->status === 'approved' && !$claim->handed_over_at,
         ]);
     }
@@ -436,7 +487,17 @@ public function verify(Request $request, $id)
         ]);
 
         // Kedua laporan dinyatakan selesai
-        $claim->report->update(['status' => 'resolved']);
+        $claim->report->update([
+            'status'          => 'resolved',
+            'resolution_type' => 'claimed',
+            'released_at'     => now(),
+            'released_by'     => $user->id,
+        ]);
+
+        // Catatan: pada jalur klaim normal, data sensitif (IMEI, ciri rahasia,
+        // foto asli) TIDAK dihapus di sini - laporan ini masih menjadi riwayat
+        // kasus yang sah. Penghapusan data sensitif berlaku untuk barang yang
+        // lewat masa klaim dan dilepas lewat berita acara tindak lanjut.
 
         if ($claim->lost_report_id) {
             \App\Models\Report::where('id', $claim->lost_report_id)

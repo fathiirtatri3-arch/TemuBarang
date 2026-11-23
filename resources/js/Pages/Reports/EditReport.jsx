@@ -1,10 +1,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useForm, usePage, Link, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
-import PetaSambikerep from '@/Components/GoogleMap'; 
+import PetaSambikerep from '@/Components/GoogleMap';
+import { isValidImei, imeiErrorMessage, formatImei } from '@/services/imei';
 
 export default function EditReport() {
-    const { report, secretFeature = '' } = usePage().props;
+    const { report, secretFeature = '', reportedImei = '', imeiUnreadable = false } = usePage().props;
     const [categories, setCategories] = useState([]);
     const [categoriesLoading, setCategoriesLoading] = useState(true);
     const [photoPreview, setPhotoPreview] = useState(null);
@@ -26,9 +27,16 @@ export default function EditReport() {
         latitude: report.latitude || '',
         longitude: report.longitude || '',
         secret_feature: secretFeature || '',
+        reported_imei: reportedImei || '',
+        imei_unreadable: !!imeiUnreadable,
         photo: null,
         _method: 'PUT',
     });
+
+    // Barang elektronik memakai nomor seri/IMEI sebagai bukti kepemilikan
+    const isElectronics = data.category === 'Elektronik';
+    const imeiRequired = report.type === 'found' && isElectronics;
+    const imeiPreview = formatImei(data.reported_imei);
     
     // Real-time validation
     useEffect(() => {
@@ -125,7 +133,7 @@ export default function EditReport() {
     
     const handleSubmit = (e) => {
         e.preventDefault();
-        
+
         if (!data.latitude || !data.longitude) {
             showToast('Tandai lokasi di peta terlebih dahulu!', 'error');
             return;
@@ -136,7 +144,30 @@ export default function EditReport() {
             showToast('Harap perbaiki error yang ada', 'error');
             return;
         }
-        
+
+        // Ciri khusus rahasia hanya untuk temuan non-elektronik
+        if (report.type === 'found' && !isElectronics && (data.secret_feature || '').trim().length < 5) {
+            showToast('Isi ciri khusus rahasia barang temuan (minimal 5 karakter)', 'error');
+            return;
+        }
+
+        // Nomor seri / IMEI
+        if (imeiRequired && !data.imei_unreadable) {
+            if (!data.reported_imei) {
+                showToast('Isi nomor seri/IMEI perangkat, atau tandai "tidak bisa membaca"', 'error');
+                return;
+            }
+            if (!isValidImei(data.reported_imei)) {
+                showToast(imeiErrorMessage(data.reported_imei), 'error');
+                return;
+            }
+        }
+
+        if (!imeiRequired && data.reported_imei && !isValidImei(data.reported_imei)) {
+            showToast(imeiErrorMessage(data.reported_imei), 'error');
+            return;
+        }
+
         setShowConfirmModal(true);
     };
     
@@ -156,6 +187,8 @@ export default function EditReport() {
         formData.append('latitude', data.latitude);
         formData.append('longitude', data.longitude);
         formData.append('secret_feature', data.secret_feature || '');
+        formData.append('reported_imei', data.reported_imei || '');
+        formData.append('imei_unreadable', data.imei_unreadable ? '1' : '0');
         if (data.photo) {
             formData.append('photo', data.photo);
         }
@@ -177,6 +210,7 @@ export default function EditReport() {
                     errors.latitude ||
                     errors.longitude ||
                     errors.secret_feature ||
+                    errors.reported_imei ||
                     errors.photo ||
                     'Gagal memperbarui laporan. Cek kembali data Anda.',
                     'error'
@@ -441,8 +475,8 @@ export default function EditReport() {
                             {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
                         </div>
                         
-                        {/* Ciri Khusus Rahasia (hanya laporan temuan) */}
-                        {report.type === 'found' && (
+                        {/* Ciri Khusus Rahasia (hanya laporan temuan NON-elektronik) */}
+                        {report.type === 'found' && !isElectronics && (
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-1">Ciri Khusus Rahasia</label>
                                 <textarea
@@ -459,6 +493,60 @@ export default function EditReport() {
                                     🔒 Tidak ditampilkan ke publik. Hanya dilihat pemilik laporan dan admin kelurahan.
                                 </p>
                                 {errors.secret_feature && <p className="text-red-500 text-xs mt-1">{errors.secret_feature}</p>}
+                            </div>
+                        )}
+
+                        {/* Nomor Seri / IMEI (barang elektronik) */}
+                        {isElectronics && (
+                            <div className="rounded-xl border-2 border-blue-100 bg-blue-50/50 p-4 space-y-3">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                                        Nomor Seri / IMEI
+                                        {imeiRequired && <span className="text-red-500"> *</span>}
+                                        {!imeiRequired && <span className="text-gray-400 font-normal text-xs"> (opsional)</span>}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        value={data.reported_imei}
+                                        onChange={e => setData('reported_imei', e.target.value.replace(/[^\d\s-]/g, ''))}
+                                        disabled={data.imei_unreadable}
+                                        className={`w-full border rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-yellow-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-400 ${
+                                            errors.reported_imei ? 'border-red-500' : 'border-gray-300'
+                                        }`}
+                                        placeholder="352099001761481 (15 digit)"
+                                        maxLength="25"
+                                    />
+                                    {imeiPreview && (
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Ditulis sebagai: <strong className="text-gray-700">{imeiPreview}</strong>
+                                            {!isValidImei(data.reported_imei) && (
+                                                <span className="text-red-500 font-medium ml-2">checksum belum valid</span>
+                                            )}
+                                        </p>
+                                    )}
+                                    {errors.reported_imei && <p className="text-red-500 text-xs mt-1">{errors.reported_imei}</p>}
+                                </div>
+
+                                {imeiRequired && (
+                                    <label className="flex items-start gap-3 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={data.imei_unreadable}
+                                            onChange={e => {
+                                                setData('imei_unreadable', e.target.checked);
+                                                if (e.target.checked) setData('reported_imei', '');
+                                            }}
+                                            className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#185FA5] focus:ring-[#185FA5]"
+                                        />
+                                        <span className="text-sm text-gray-700">
+                                            <strong>Tidak bisa membaca</strong> — perangkat mati, terkunci, atau nomornya sudah aus.
+                                            <span className="block text-xs text-gray-500 mt-0.5">
+                                                Admin akan membaca nomornya sendiri saat menerima barang di kantor kelurahan.
+                                            </span>
+                                        </span>
+                                    </label>
+                                )}
                             </div>
                         )}
 

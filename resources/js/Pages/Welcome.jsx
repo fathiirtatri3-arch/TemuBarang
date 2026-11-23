@@ -197,7 +197,7 @@ export default function Welcome({ auth }) {
                                         Lapor Barang Hilang
                                     </Link>
                                     <Link
-                                        href="/search"
+                                        href="/barang-temuan"
                                         className="flex items-center justify-center gap-2 border-2 border-white/30 text-white px-8 py-4 rounded-2xl font-semibold text-base hover:bg-white/10 transition-all active:scale-95"
                                     >
                                         <span className="material-symbols-outlined">grid_view</span>

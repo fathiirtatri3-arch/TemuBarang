@@ -26,11 +26,15 @@ class Claim extends Model
         'receiver_name',
         'receiver_id_type',
         'handover_note',
+        'is_redemption',
+        'redeemed_at',
     ];
 
     protected $casts = [
         'verified_at' => 'datetime',
         'handed_over_at' => 'datetime',
+        'redeemed_at' => 'datetime',
+        'is_redemption' => 'boolean',
     ];
 
     public function report()

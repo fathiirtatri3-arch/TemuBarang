@@ -2,9 +2,29 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Link, usePage, useForm, router } from '@inertiajs/react';
 import { useState } from 'react';
 import PetaSambikerepView from '@/Components/GoogleMapView';
+import { isValidImei, imeiErrorMessage, formatImei } from '@/services/imei';
 
 export default function ReportDetail() {
-    const { report, myLostReports = [], canManage = false, secretFeature = null, requiresProof = false, rejectionReason = null, serialNumber = null } = usePage().props;
+    const {
+        report,
+        myLostReports = [],
+        canManage = false,
+        secretFeature = null,
+        requiresProof = false,
+        rejectionReason = null,
+        serialNumber = null,
+        reportedImei = null,
+        reportedImeiFormatted = null,
+        imeiUnreadable = false,
+        imeiVerifiedAt = null,
+        photoBlurred = false,
+        photoSensitive = false,
+        piiDetected = false,
+        piiStatus = 'none',
+        piiReasons = [],
+        piiCheckedAt = null,
+        piiCheckError = null,
+    } = usePage().props;
     const [showMatch, setShowMatch] = useState(false);
     const [matches, setMatches] = useState([]);
     const [loadingMatch, setLoadingMatch] = useState(false);
@@ -18,6 +38,7 @@ export default function ReportDetail() {
     const [claimSerial, setClaimSerial] = useState('');
     const [showReceiveModal, setShowReceiveModal] = useState(false);
     const [serialInput, setSerialInput] = useState('');
+    const [privacyLoading, setPrivacyLoading] = useState(false);
 
     // ID laporan hilang yang dibawa dari halaman Pencocokan (?lost_report_id=XX)
     const lostReportIdFromUrl = typeof window !== 'undefined'
@@ -119,6 +140,10 @@ export default function ReportDetail() {
             showToast('Isi nomor seri/IMEI perangkat', 'error');
             return;
         }
+        if (report.category === 'Elektronik' && !isValidImei(claimSerial)) {
+            showToast(imeiErrorMessage(claimSerial), 'error');
+            return;
+        }
         if (requiresProof && claimProof.trim().length < 5) {
             showToast('Sebutkan ciri khusus barang yang hanya Anda ketahui', 'error');
             return;
@@ -150,13 +175,34 @@ export default function ReportDetail() {
     };
 
     const receiveItem = () => {
+        // Barang elektronik: nomor seri harus IMEI yang sah (15 digit + checksum)
+        if (report.category === 'Elektronik' && !isValidImei(serialInput)) {
+            showToast(imeiErrorMessage(serialInput), 'error');
+            return;
+        }
+
         router.put(`/admin/reports/${report.id}/receive`, { serial_number: serialInput }, {
             preserveScroll: true,
             onSuccess: (page) => {
                 const f = page.props.flash || {};
-                showToast(f.error || f.success || 'Penerimaan barang dicatat', f.error ? 'error' : 'success');
+                showToast(f.warning || f.error || f.success || 'Penerimaan barang dicatat',
+                    f.error ? 'error' : (f.warning ? 'info' : 'success'));
                 if (!f.error) setShowReceiveModal(false);
             },
+        });
+    };
+
+    // Admin mengoreksi hasil deteksi data pribadi (samarkan / buka samaran)
+    const updatePrivacy = (mode) => {
+        setPrivacyLoading(true);
+        router.put(`/admin/reports/${report.id}/privacy/${mode}`, {}, {
+            preserveScroll: true,
+            onSuccess: (page) => {
+                const f = page.props.flash || {};
+                showToast(f.error || f.success || 'Status privasi foto diperbarui', f.error ? 'error' : 'success');
+            },
+            onError: () => showToast('Gagal memperbarui status privasi foto', 'error'),
+            onFinish: () => setPrivacyLoading(false),
         });
     };
 
@@ -197,17 +243,30 @@ export default function ReportDetail() {
                         <h3 className="text-lg font-bold text-gray-900 mb-1">Catat Barang Diterima</h3>
                         <p className="text-gray-500 text-sm mb-4">
                             Baca nomor seri atau IMEI langsung dari <strong>fisik perangkat</strong> (bukan dari pengakuan penemu).
+                            {report.category === 'Elektronik' && (
+                                <span className="block mt-2 text-xs text-gray-600 bg-blue-50 border border-blue-200 rounded-lg p-2">
+                                    💡 Untuk barang elektronik, isi IMEI 15 digit yang sah. Nilainya akan dibandingkan otomatis dengan yang dilaporkan penemu — kalau berbeda, sistem memberi peringatan.
+                                </span>
+                            )}
                         </p>
                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                             Nomor seri / IMEI <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="text"
+                            inputMode="numeric"
                             value={serialInput}
-                            onChange={(e) => setSerialInput(e.target.value)}
+                            onChange={(e) => setSerialInput(e.target.value.replace(/[^\d\s-]/g, ''))}
                             className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-mono focus:ring-2 focus:ring-[#185FA5]"
-                            placeholder="Mis. IMEI 15 digit (tekan *#06#) atau nomor seri di bagian belakang"
+                            placeholder="Mis. 352099001761481 (15 digit)"
                         />
+                        {serialInput && report.category === 'Elektronik' && (
+                            <p className={`text-xs mt-1.5 ${isValidImei(serialInput) ? 'text-green-600' : 'text-red-500'}`}>
+                                {isValidImei(serialInput)
+                                    ? `✓ Checksum valid — dibaca sebagai ${formatImei(serialInput)}`
+                                    : imeiErrorMessage(serialInput)}
+                            </p>
+                        )}
                         <div className="flex gap-3 justify-end mt-5">
                             <button onClick={() => setShowReceiveModal(false)} className="px-4 py-2 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition text-sm font-semibold">
                                 Batal
@@ -458,6 +517,28 @@ export default function ReportDetail() {
                                         </button>
                                     )}
 
+                                    {/* Tebus: masa klaim sudah habis, tapi barang masih di kantor kelurahan */}
+                                    {!isLost && !isOwner && report.status === 'expired' && (
+                                        <button
+                                            onClick={openClaimModal}
+                                            disabled={claimLoading}
+                                            className="w-full py-2.5 bg-amber-600 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-700 transition disabled:opacity-50"
+                                        >
+                                            {claimLoading ? 'Memproses...' : '📦 Tebus Barang Ini'}
+                                        </button>
+                                    )}
+
+                                    {/* Tindak lanjut barang temuan yang masa klaimnya habis (admin) */}
+                                    {!isLost && canManage && report.status === 'expired' && !report.released_at && (
+                                        <Link
+                                            href={`/admin/reports/${report.id}/followup`}
+                                            className="w-full py-2.5 border border-amber-200 text-amber-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-amber-50 transition"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                            Catat Berita acara Tindak Lanjut
+                                        </Link>
+                                    )}
+
                                     {/* Edit */}
                                     {canManage && !['resolved', 'matched'].includes(report.status) && (
                                         <Link
@@ -524,13 +605,156 @@ export default function ReportDetail() {
                                         </button>
                                     )}
 
-                                    {canManage && serialNumber && (
-                                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                                    {/* Masa klaim barang temuan */}
+                                    {report.claim_deadline && (
+                                        <div className={`flex gap-2.5 p-3 rounded-xl border ${
+                                            report.status === 'expired'
+                                                ? 'bg-amber-50 border-amber-200'
+                                                : 'bg-slate-50 border-slate-200'
+                                        }`}>
+                                            <span className={`material-symbols-outlined text-lg ${
+                                                report.status === 'expired' ? 'text-amber-600' : 'text-slate-500'
+                                            }`}>
+                                                {report.status === 'expired' ? 'hourglass_top' : 'schedule'}
+                                            </span>
+                                            <div>
+                                                <p className={`text-xs font-bold ${
+                                                    report.status === 'expired' ? 'text-amber-800' : 'text-slate-700'
+                                                }`}>
+                                                    {report.status === 'expired'
+                                                        ? 'Masa klaim habis - menunggu tindak lanjut'
+                                                        : 'Masa klaim aktif'}
+                                                </p>
+                                                <p className={`text-xs mt-1 leading-relaxed ${
+                                                    report.status === 'expired' ? 'text-amber-700' : 'text-slate-600'
+                                                }`}>
+                                                    {report.status === 'expired' ? (
+                                                        <>
+                                                            Barang <strong>bukan</strong> hilang dan <strong>bukan</strong> milik negara.
+                                                            Barang masih tersimpan di kantor kelurahan dan pemilik aslinya
+                                                            masih bisa menebusnya sampai barang benar-benar dilepas.
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            Pemilik bisa mengklaim sampai{' '}
+                                                            <strong>{formatDate(report.claim_deadline)}</strong>.
+                                                        </>
+                                                    )}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Nomor seri / IMEI — tiga sumber: dilaporkan, dibaca admin, diverifikasi */}
+                                    {(canManage && (reportedImei || imeiUnreadable || serialNumber)) && (
+                                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
                                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                                                <span className="material-symbols-outlined text-sm">pin</span>
-                                                Nomor seri / IMEI (dicatat admin)
+                                                <span className="material-symbols-outlined text-sm">numbers</span>
+                                                Nomor Seri / IMEI
                                             </p>
-                                            <p className="text-sm text-slate-800 mt-1 font-mono break-all">{serialNumber}</p>
+
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <span className="text-xs text-slate-500">Dilaporkan pelapor</span>
+                                                    <span className="text-sm font-mono text-slate-800 text-right break-all">
+                                                        {reportedImeiFormatted || (imeiUnreadable ? 'Tidak bisa dibaca' : '—')}
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <span className="text-xs text-slate-500">Dibaca admin (fisik)</span>
+                                                    <span className="text-sm font-mono text-slate-800 text-right break-all">
+                                                        {formatImei(serialNumber) || '—'}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Peringatan kalau angka berbeda */}
+                                            {reportedImei && serialNumber && formatImei(reportedImei) !== formatImei(serialNumber) && (
+                                                <div className="flex gap-2 p-2 rounded-lg bg-amber-50 border border-amber-200">
+                                                    <span className="material-symbols-outlined text-amber-600 text-sm">warning</span>
+                                                    <p className="text-[11px] text-amber-800 leading-relaxed">
+                                                        ⚠️ Nomor seri yang dibaca admin <strong>BERBEDA</strong> dengan yang dilaporkan pelapor. Mohon verifikasi ulang sebelum menyetujui klaim.
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {reportedImei && serialNumber && formatImei(reportedImei) === formatImei(serialNumber) && (
+                                                <div className="flex gap-2 p-2 rounded-lg bg-green-50 border border-green-200">
+                                                    <span className="material-symbols-outlined text-green-600 text-sm">verified</span>
+                                                    <p className="text-[11px] text-green-800 leading-relaxed">
+                                                        ✅ Nomor seri <strong>cocok</strong> dengan yang dilaporkan pelapor.
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {imeiVerifiedAt && (
+                                                <p className="text-[10px] text-slate-400">Diverifikasi admin pada {formatDate(imeiVerifiedAt)}</p>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Privasi foto: hasil deteksi data pribadi otomatis + koreksi admin */}
+                                    {(piiDetected || piiStatus !== 'none' || photoBlurred || photoSensitive) && (
+                                        <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-2">
+                                            <p className="text-[10px] font-black text-amber-700 uppercase tracking-wider flex items-center gap-1">
+                                                <span className="material-symbols-outlined text-sm">privacy_tip</span>
+                                                Privasi Foto
+                                            </p>
+
+                                            {photoSensitive ? (
+                                                <p className="text-[11px] text-amber-800 leading-relaxed">
+                                                    🔒 Foto disamarkan otomatis karena kategori <strong>{report.category}</strong> berisi data sensitif. Foto asli disimpan di server dan hanya bisa dilihat pemilik laporan &amp; admin.
+                                                </p>
+                                            ) : photoBlurred ? (
+                                                <p className="text-[11px] text-amber-800 leading-relaxed">
+                                                    🔒 Foto disamarkan otomatis karena terdeteksi memuat data pribadi. Foto asli disimpan di server dan hanya bisa dilihat pemilik laporan &amp; admin.
+                                                </p>
+                                            ) : (
+                                                <p className="text-[11px] text-green-800 leading-relaxed">
+                                                    ✅ Tidak ada data pribadi yang terdeteksi. Foto tampil normal.
+                                                </p>
+                                            )}
+
+                                            {piiReasons?.length > 0 && (
+                                                <ul className="space-y-0.5">
+                                                    {piiReasons.map((r, i) => (
+                                                        <li key={i} className="text-[11px] text-amber-800">• {r}</li>
+                                                    ))}
+                                                </ul>
+                                            )}
+
+                                            {piiCheckError && (
+                                                <p className="text-[11px] text-red-700">⚠️ {piiCheckError}</p>
+                                            )}
+
+                                            {piiCheckedAt && (
+                                                <p className="text-[10px] text-amber-600/70">Diperiksa otomatis pada {formatDate(piiCheckedAt)}</p>
+                                            )}
+
+                                            {/* Koreksi admin untuk hasil deteksi yang keliru */}
+                                            {isAdmin && canManage && (
+                                                <div className="flex gap-2 pt-1">
+                                                    {!photoBlurred && (
+                                                        <button
+                                                            onClick={() => updatePrivacy('blur')}
+                                                            disabled={privacyLoading}
+                                                            className="flex-1 px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 transition disabled:opacity-50"
+                                                        >
+                                                            Samarkan foto
+                                                        </button>
+                                                    )}
+                                                    {photoBlurred && !photoSensitive && (
+                                                        <button
+                                                            onClick={() => updatePrivacy('unblur')}
+                                                            disabled={privacyLoading}
+                                                            className="flex-1 px-3 py-1.5 bg-white border border-amber-300 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-50 transition disabled:opacity-50"
+                                                        >
+                                                            Buka samaran
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 
@@ -693,12 +917,20 @@ export default function ReportDetail() {
                                 </label>
                                 <input
                                     type="text"
+                                    inputMode="numeric"
                                     value={claimSerial}
-                                    onChange={(e) => setClaimSerial(e.target.value)}
-                                    maxLength="100"
-                                    placeholder="Mis. IMEI 15 digit (tekan *#06# di HP) atau nomor seri di kotak/nota"
+                                    onChange={(e) => setClaimSerial(e.target.value.replace(/[^\d\s-]/g, ''))}
+                                    maxLength="25"
+                                    placeholder="352099001761481 (15 digit)"
                                     className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-mono focus:ring-2 focus:ring-[#185FA5]"
                                 />
+                                {claimSerial && (
+                                    <p className={`text-[11px] mt-1 ${isValidImei(claimSerial) ? 'text-green-600' : 'text-red-500'}`}>
+                                        {isValidImei(claimSerial)
+                                            ? `✓ Checksum valid — dibaca sebagai ${formatImei(claimSerial)}`
+                                            : imeiErrorMessage(claimSerial)}
+                                    </p>
+                                )}
                                 <p className="text-[11px] text-gray-400 mt-1">
                                     Tidak hafal? Cek kotak, nota pembelian, atau akun Google/Apple. Admin mencocokkan dengan catatan dari fisik perangkat.
                                 </p>

@@ -1,14 +1,20 @@
 import { useState, useEffect } from 'react';
-import { usePage, useParams, Link } from '@inertiajs/react';
+import { usePage, Link } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
 export default function MatchResult() {
-    const { id } = useParams();
+    const { reportId: idFromProps } = usePage().props;
     const [matches, setMatches] = useState([]);
     const [loading, setLoading] = useState(true);
     const [reportInfo, setReportInfo] = useState(null);
     const [toast, setToast] = useState({ show: false, message: '', type: '' });
-    
+
+    // ID laporan bisa datang dari props Inertia (route /reports/{id}/match)
+    // atau dari query string.
+    const id = idFromProps ?? (typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('id')
+        : null);
+
     const reportId = id;
     
     const showToast = (message, type = 'success') => {
