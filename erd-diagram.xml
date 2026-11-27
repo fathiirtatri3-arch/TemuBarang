@@ -1,0 +1,599 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="Claude Code (Mermaid erDiagram -> draw.io)" version="24.7.17">
+  <diagram id="erd-temubarang" name="ERD TemuBarang">
+    <mxGraphModel dx="2000" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="2339" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="ERD - TemuBarang | Sistem Barang Hilang &amp; Barang Temuan (AI + Geolokasi) | Kecamatan Sambikerep, Surabaya" style="text;html=1;align=left;verticalAlign=middle;fontSize=18;fontStyle=1;fontColor=#1A1A1A;" vertex="1" parent="1">
+          <mxGeometry x="40" y="-60" width="1200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="infraBox" value="Infrastruktur Laravel (tabel bawaan framework)" style="rounded=0;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 8;fillColor=none;strokeColor=#999999;fontStyle=2;fontSize=12;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="20" y="790" width="340" height="850" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REGIONS" value="REGIONS" style="swimlane;html=1;startSize=30;horizontal=1;rounded=0;fillColor=#d5e8d4;strokeColor=#666666;fontStyle=1;fontSize=13;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="300" height="394" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REGIONS_r0" value="<b>id</b> : bigint <i style="color:#666666">[PK]</i><br><font style="font-size:9px" color="#777777">PK - surrogate key</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#d5e8d4;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REGIONS">
+          <mxGeometry y="30" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REGIONS_r1" value="<b>name</b> : string<br><font style="font-size:9px" color="#777777">Nama wilayah, mis. Kelurahan Made</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REGIONS">
+          <mxGeometry y="56" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REGIONS_r2" value="<b>type</b> : enum<br><font style="font-size:9px" color="#777777">kecamatan | kelurahan | rw</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REGIONS">
+          <mxGeometry y="82" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REGIONS_r3" value="<b>parent_id</b> : bigint <i style="color:#666666">[FK]</i><br><font style="font-size:9px" color="#777777">FK -&gt; regions.id (self reference, onDelete cascade)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#fff2cc;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REGIONS">
+          <mxGeometry y="108" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REGIONS_r4" value="<b>latitude</b> : decimal<br><font style="font-size:9px" color="#777777">Titik tengah peta (10,7)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REGIONS">
+          <mxGeometry y="134" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REGIONS_r5" value="<b>longitude</b> : decimal<br><font style="font-size:9px" color="#777777">Titik tengah peta (10,7)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REGIONS">
+          <mxGeometry y="160" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REGIONS_r6" value="<b>bounds_north</b> : decimal<br><font style="font-size:9px" color="#777777">Batas atas peta (restriction)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REGIONS">
+          <mxGeometry y="186" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REGIONS_r7" value="<b>bounds_south</b> : decimal<br><font style="font-size:9px" color="#777777">Batas bawah peta (restriction)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REGIONS">
+          <mxGeometry y="212" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REGIONS_r8" value="<b>bounds_east</b> : decimal<br><font style="font-size:9px" color="#777777">Batas timur peta (restriction)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REGIONS">
+          <mxGeometry y="238" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REGIONS_r9" value="<b>bounds_west</b> : decimal<br><font style="font-size:9px" color="#777777">Batas barat peta (restriction)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REGIONS">
+          <mxGeometry y="264" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REGIONS_r10" value="<b>kecamatan</b> : string<br><font style="font-size:9px" color="#777777">Default: Sambikerep</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REGIONS">
+          <mxGeometry y="290" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REGIONS_r11" value="<b>kota</b> : string<br><font style="font-size:9px" color="#777777">Default: Surabaya</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REGIONS">
+          <mxGeometry y="316" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REGIONS_r12" value="<b>created_at</b> : timestamp" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REGIONS">
+          <mxGeometry y="342" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REGIONS_r13" value="<b>updated_at</b> : timestamp" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REGIONS">
+          <mxGeometry y="368" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_USERS" value="USERS" style="swimlane;html=1;startSize=30;horizontal=1;rounded=0;fillColor=#dae8fc;strokeColor=#666666;fontStyle=1;fontSize=13;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40" y="470" width="300" height="342" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_USERS_r0" value="<b>id</b> : bigint <i style="color:#666666">[PK]</i><br><font style="font-size:9px" color="#777777">PK - surrogate key</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#d5e8d4;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_USERS">
+          <mxGeometry y="30" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_USERS_r1" value="<b>name</b> : string<br><font style="font-size:9px" color="#777777">Nama lengkap warga</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_USERS">
+          <mxGeometry y="56" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_USERS_r2" value="<b>email</b> : string <i style="color:#666666">[UK]</i><br><font style="font-size:9px" color="#777777">Email unik, verifikasi hanya Gmail</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#e1d5e7;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_USERS">
+          <mxGeometry y="82" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_USERS_r3" value="<b>email_verified_at</b> : timestamp<br><font style="font-size:9px" color="#777777">Wajib terisi untuk akses dashboard</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_USERS">
+          <mxGeometry y="108" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_USERS_r4" value="<b>password</b> : string<br><font style="font-size:9px" color="#777777">Hash bcrypt</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_USERS">
+          <mxGeometry y="134" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_USERS_r5" value="<b>remember_token</b> : string<br><font style="font-size:9px" color="#777777">Token remember-me</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_USERS">
+          <mxGeometry y="160" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_USERS_r6" value="<b>role</b> : enum<br><font style="font-size:9px" color="#777777">super_admin | admin_kelurahan | user (default user)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_USERS">
+          <mxGeometry y="186" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_USERS_r7" value="<b>region_id</b> : bigint <i style="color:#666666">[FK]</i><br><font style="font-size:9px" color="#777777">FK -&gt; regions.id (onDelete set null)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#fff2cc;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_USERS">
+          <mxGeometry y="212" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_USERS_r8" value="<b>phone</b> : string<br><font style="font-size:9px" color="#777777">Nomor HP untuk notifikasi</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_USERS">
+          <mxGeometry y="238" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_USERS_r9" value="<b>is_verified</b> : boolean<br><font style="font-size:9px" color="#777777">Verifikasi manual oleh admin</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_USERS">
+          <mxGeometry y="264" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_USERS_r10" value="<b>created_at</b> : timestamp" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_USERS">
+          <mxGeometry y="290" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_USERS_r11" value="<b>updated_at</b> : timestamp" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_USERS">
+          <mxGeometry y="316" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS" value="REPORTS" style="swimlane;html=1;startSize=30;horizontal=1;rounded=0;fillColor=#ffe6cc;strokeColor=#666666;fontStyle=1;fontSize=13;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="400" y="40" width="340" height="1070" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r0" value="<b>id</b> : bigint <i style="color:#666666">[PK]</i><br><font style="font-size:9px" color="#777777">PK - surrogate key</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#d5e8d4;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="30" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r1" value="<b>user_id</b> : bigint <i style="color:#666666">[FK]</i><br><font style="font-size:9px" color="#777777">FK -&gt; users.id (pelapor, onDelete cascade)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#fff2cc;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="56" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r2" value="<b>type</b> : enum<br><font style="font-size:9px" color="#777777">lost (barang hilang) | found (barang temuan)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="82" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r3" value="<b>item_name</b> : string<br><font style="font-size:9px" color="#777777">Nama barang</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="108" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r4" value="<b>category</b> : string<br><font style="font-size:9px" color="#777777">Kategori barang</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="134" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r5" value="<b>description</b> : text<br><font style="font-size:9px" color="#777777">Kronologi / ciri umum</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="160" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r6" value="<b>secret_feature</b> : text<br><font style="font-size:9px" color="#777777">Ciri khusus pembeda - TERKUNCI (tidak dikirim ke publik)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="186" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r7" value="<b>color</b> : string<br><font style="font-size:9px" color="#777777">Warna barang</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="212" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r8" value="<b>location</b> : string<br><font style="font-size:9px" color="#777777">Lokasi kejadian (nama tempat)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="238" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r9" value="<b>location_detail</b> : string<br><font style="font-size:9px" color="#777777">Alamat detail</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="264" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r10" value="<b>date</b> : date<br><font style="font-size:9px" color="#777777">Tanggal kejadian</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="290" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r11" value="<b>latitude</b> : decimal<br><font style="font-size:9px" color="#777777">Koordinat (10,7)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="316" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r12" value="<b>longitude</b> : decimal<br><font style="font-size:9px" color="#777777">Koordinat (10,7)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="342" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r13" value="<b>region_id</b> : bigint <i style="color:#666666">[FK]</i><br><font style="font-size:9px" color="#777777">FK -&gt; regions.id (onDelete set null)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#fff2cc;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="368" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r14" value="<b>photo</b> : string<br><font style="font-size:9px" color="#777777">Foto publik (versi buram bila perlu)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="394" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r15" value="<b>photo_original</b> : string<br><font style="font-size:9px" color="#777777">Foto ASLI - disk privat, otorisasi khusus</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="420" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r16" value="<b>photo_blurred</b> : boolean<br><font style="font-size:9px" color="#777777">Foto publik yang tampil adalah versi buram</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="446" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r17" value="<b>photo_sensitive</b> : boolean<br><font style="font-size:9px" color="#777777">Kategori sensitif - tidak bisa dibuka samarannya</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="472" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r18" value="<b>serial_number</b> : string<br><font style="font-size:9px" color="#777777">Nomor seri / IMEI dibaca admin dari fisik (100)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="498" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r19" value="<b>reported_imei</b> : string<br><font style="font-size:9px" color="#777777">IMEI yang dilaporkan pelapor (20, indexed)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="524" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r20" value="<b>imei_unreadable</b> : boolean<br><font style="font-size:9px" color="#777777">IMEI tidak terbaca dari perangkat</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="550" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r21" value="<b>imei_verified_at</b> : timestamp<br><font style="font-size:9px" color="#777777">Waktu admin memverifikasi IMEI</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="576" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r22" value="<b>pii_detected</b> : boolean<br><font style="font-size:9px" color="#777777">Deteksi data pribadi oleh AI</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="602" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r23" value="<b>pii_reasons</b> : json<br><font style="font-size:9px" color="#777777">Alasan deteksi PII (array JSON)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="628" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r24" value="<b>pii_status</b> : string<br><font style="font-size:9px" color="#777777">none | detected | cleared | forced (default none)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="654" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r25" value="<b>pii_checked_at</b> : timestamp<br><font style="font-size:9px" color="#777777">Waktu pemeriksaan PII terakhir</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="680" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r26" value="<b>pii_check_error</b> : string<br><font style="font-size:9px" color="#777777">Pesan error bila pemeriksaan gagal (255)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="706" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r27" value="<b>privacy_override_by</b> : bigint <i style="color:#666666">[FK]</i><br><font style="font-size:9px" color="#777777">FK -&gt; users.id (admin yang koreksi manual)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#fff2cc;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="732" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r28" value="<b>privacy_override_at</b> : timestamp<br><font style="font-size:9px" color="#777777">Waktu koreksi samaran foto</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="758" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r29" value="<b>status</b> : enum<br><font style="font-size:9px" color="#777777">pending | verified | matched | resolved | rejected | expired</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="784" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r30" value="<b>received_at</b> : timestamp<br><font style="font-size:9px" color="#777777">Waktu barang diterima di kantor kelurahan</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="810" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r31" value="<b>received_by</b> : bigint <i style="color:#666666">[FK]</i><br><font style="font-size:9px" color="#777777">FK -&gt; users.id (admin penerima barang)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#fff2cc;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="836" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r32" value="<b>rejection_reason</b> : text<br><font style="font-size:9px" color="#777777">Alasan penolakan (wajib diisi admin)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="862" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r33" value="<b>claim_deadline</b> : timestamp<br><font style="font-size:9px" color="#777777">Batas akhir masa klaim (30 hari)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="888" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r34" value="<b>expired_at</b> : timestamp<br><font style="font-size:9px" color="#777777">Waktu became kedaluwarsa</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="914" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r35" value="<b>released_at</b> : timestamp<br><font style="font-size:9px" color="#777777">Waktu barang benar-benar dilepas</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="940" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r36" value="<b>resolution_type</b> : enum<br><font style="font-size:9px" color="#777777">claimed | return_to_issuer | hand_to_authority | donated | destroyed</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="966" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r37" value="<b>released_by</b> : bigint <i style="color:#666666">[FK]</i><br><font style="font-size:9px" color="#777777">FK -&gt; users.id (admin pelepas barang)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#fff2cc;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="992" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r38" value="<b>created_at</b> : timestamp" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="1018" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORTS_r39" value="<b>updated_at</b> : timestamp" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORTS">
+          <mxGeometry y="1044" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS" value="CLAIMS" style="swimlane;html=1;startSize=30;horizontal=1;rounded=0;fillColor=#ffe6cc;strokeColor=#666666;fontStyle=1;fontSize=13;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="400" y="1080" width="340" height="576" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r0" value="<b>id</b> : bigint <i style="color:#666666">[PK]</i><br><font style="font-size:9px" color="#777777">PK - surrogate key</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#d5e8d4;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="30" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r1" value="<b>report_id</b> : bigint <i style="color:#666666">[FK]</i><br><font style="font-size:9px" color="#777777">FK -&gt; reports.id (barang temuan yang diklaim)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#fff2cc;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="56" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r2" value="<b>lost_report_id</b> : bigint <i style="color:#666666">[FK]</i><br><font style="font-size:9px" color="#777777">FK -&gt; reports.id (laporan HILANG pemilik, nullable)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#fff2cc;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="82" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r3" value="<b>claimant_id</b> : bigint <i style="color:#666666">[FK]</i><br><font style="font-size:9px" color="#777777">FK -&gt; users.id (pengeclaim, onDelete cascade)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#fff2cc;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="108" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r4" value="<b>owner_id</b> : bigint <i style="color:#666666">[FK]</i><br><font style="font-size:9px" color="#777777">FK -&gt; users.id (pemilik barang / penemu asli)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#fff2cc;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="134" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r5" value="<b>status</b> : enum<br><font style="font-size:9px" color="#777777">pending | approved | rejected (default pending)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="160" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r6" value="<b>is_redemption</b> : boolean<br><font style="font-size:9px" color="#777777">Klaim tebus barang yang sudah kedaluwarsa</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="186" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r7" value="<b>redeemed_at</b> : timestamp<br><font style="font-size:9px" color="#777777">Waktu penebusan barang kedaluwarsa</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="212" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r8" value="<b>message</b> : text<br><font style="font-size:9px" color="#777777">Pesan dari pengeclaim</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="238" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r9" value="<b>claimant_proof</b> : text<br><font style="font-size:9px" color="#777777">Bukti kepemilikan: ciri khusus / foto</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="264" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r10" value="<b>claimant_serial</b> : string<br><font style="font-size:9px" color="#777777">Nomor seri / IMEI yang diklaim (100)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="290" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r11" value="<b>admin_note</b> : text<br><font style="font-size:9px" color="#777777">Catatan keputusan admin</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="316" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r12" value="<b>verified_at</b> : timestamp<br><font style="font-size:9px" color="#777777">Waktu klaim diputuskan</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="342" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r13" value="<b>verified_by</b> : bigint <i style="color:#666666">[FK]</i><br><font style="font-size:9px" color="#777777">FK -&gt; users.id (admin pemutus, nullable)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#fff2cc;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="368" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r14" value="<b>handed_over_at</b> : timestamp<br><font style="font-size:9px" color="#777777">Waktu serah terima barang</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="394" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r15" value="<b>handed_over_by</b> : bigint <i style="color:#666666">[FK]</i><br><font style="font-size:9px" color="#777777">FK -&gt; users.id (admin penetrus, nullable)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#fff2cc;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="420" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r16" value="<b>receiver_name</b> : string<br><font style="font-size:9px" color="#777777">Nama penerima barang saat serah terima</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="446" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r17" value="<b>receiver_id_type</b> : string<br><font style="font-size:9px" color="#777777">Jenis identitas penerima (30)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="472" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r18" value="<b>handover_note</b> : text<br><font style="font-size:9px" color="#777777">Catatan serah terima</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="498" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r19" value="<b>created_at</b> : timestamp" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="524" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CLAIMS_r20" value="<b>updated_at</b> : timestamp" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CLAIMS">
+          <mxGeometry y="550" width="340" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_MATCH_RESULTS" value="MATCH_RESULTS" style="swimlane;html=1;startSize=30;horizontal=1;rounded=0;fillColor=#f8cecc;strokeColor=#666666;fontStyle=1;fontSize=13;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="800" y="40" width="300" height="264" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_MATCH_RESULTS_r0" value="<b>id</b> : bigint <i style="color:#666666">[PK]</i><br><font style="font-size:9px" color="#777777">PK - surrogate key</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#d5e8d4;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_MATCH_RESULTS">
+          <mxGeometry y="30" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_MATCH_RESULTS_r1" value="<b>report_id_1</b> : bigint <i style="color:#666666">[FK]</i><br><font style="font-size:9px" color="#777777">FK -&gt; reports.id (laporan A, cascade)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#fff2cc;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_MATCH_RESULTS">
+          <mxGeometry y="56" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_MATCH_RESULTS_r2" value="<b>report_id_2</b> : bigint <i style="color:#666666">[FK]</i><br><font style="font-size:9px" color="#777777">FK -&gt; reports.id (laporan B, cascade)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#fff2cc;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_MATCH_RESULTS">
+          <mxGeometry y="82" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_MATCH_RESULTS_r3" value="<b>photo_score</b> : decimal<br><font style="font-size:9px" color="#777777">Skor computer vision 0-100 (5,2)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_MATCH_RESULTS">
+          <mxGeometry y="108" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_MATCH_RESULTS_r4" value="<b>text_score</b> : decimal<br><font style="font-size:9px" color="#777777">Skor pencocokan teks 0-100 (5,2)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_MATCH_RESULTS">
+          <mxGeometry y="134" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_MATCH_RESULTS_r5" value="<b>final_score</b> : decimal<br><font style="font-size:9px" color="#777777">Skor gabungan 50% foto + 50% teks (5,2)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_MATCH_RESULTS">
+          <mxGeometry y="160" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_MATCH_RESULTS_r6" value="<b>label</b> : string<br><font style="font-size:9px" color="#777777">Label: sangat cocok / mungkin cocok</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_MATCH_RESULTS">
+          <mxGeometry y="186" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_MATCH_RESULTS_r7" value="<b>created_at</b> : timestamp" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_MATCH_RESULTS">
+          <mxGeometry y="212" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_MATCH_RESULTS_r8" value="<b>updated_at</b> : timestamp" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_MATCH_RESULTS">
+          <mxGeometry y="238" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_NOTIFICATIONS" value="NOTIFICATIONS" style="swimlane;html=1;startSize=30;horizontal=1;rounded=0;fillColor=#dae8fc;strokeColor=#666666;fontStyle=1;fontSize=13;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="800" y="360" width="300" height="264" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_NOTIFICATIONS_r0" value="<b>id</b> : bigint <i style="color:#666666">[PK]</i><br><font style="font-size:9px" color="#777777">PK - surrogate key</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#d5e8d4;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_NOTIFICATIONS">
+          <mxGeometry y="30" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_NOTIFICATIONS_r1" value="<b>user_id</b> : bigint <i style="color:#666666">[FK]</i><br><font style="font-size:9px" color="#777777">FK -&gt; users.id (penerima, onDelete cascade)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#fff2cc;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_NOTIFICATIONS">
+          <mxGeometry y="56" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_NOTIFICATIONS_r2" value="<b>title</b> : string<br><font style="font-size:9px" color="#777777">Judul notifikasi</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_NOTIFICATIONS">
+          <mxGeometry y="82" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_NOTIFICATIONS_r3" value="<b>message</b> : text<br><font style="font-size:9px" color="#777777">Isi notifikasi</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_NOTIFICATIONS">
+          <mxGeometry y="108" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_NOTIFICATIONS_r4" value="<b>type</b> : string<br><font style="font-size:9px" color="#777777">success | error | info | match (default info)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_NOTIFICATIONS">
+          <mxGeometry y="134" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_NOTIFICATIONS_r5" value="<b>link</b> : string<br><font style="font-size:9px" color="#777777">URL tujuan, mis. /reports/1</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_NOTIFICATIONS">
+          <mxGeometry y="160" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_NOTIFICATIONS_r6" value="<b>is_read</b> : boolean<br><font style="font-size:9px" color="#777777">Sudah dibaca (badge badge in-app)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_NOTIFICATIONS">
+          <mxGeometry y="186" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_NOTIFICATIONS_r7" value="<b>created_at</b> : timestamp" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_NOTIFICATIONS">
+          <mxGeometry y="212" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_NOTIFICATIONS_r8" value="<b>updated_at</b> : timestamp" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_NOTIFICATIONS">
+          <mxGeometry y="238" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORT_FOLLOWUPS" value="REPORT_FOLLOWUPS" style="swimlane;html=1;startSize=30;horizontal=1;rounded=0;fillColor=#e1d5e7;strokeColor=#666666;fontStyle=1;fontSize=13;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="40" width="320" height="472" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORT_FOLLOWUPS_r0" value="<b>id</b> : bigint <i style="color:#666666">[PK]</i><br><font style="font-size:9px" color="#777777">PK - surrogate key</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#d5e8d4;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORT_FOLLOWUPS">
+          <mxGeometry y="30" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORT_FOLLOWUPS_r1" value="<b>report_id</b> : bigint <i style="color:#666666">[FK]</i><br><font style="font-size:9px" color="#777777">FK -&gt; reports.id (barang temuan, cascade)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#fff2cc;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORT_FOLLOWUPS">
+          <mxGeometry y="56" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORT_FOLLOWUPS_r2" value="<b>action</b> : enum<br><font style="font-size:9px" color="#777777">return_to_issuer | hand_to_authority | donated | destroyed</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORT_FOLLOWUPS">
+          <mxGeometry y="82" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORT_FOLLOWUPS_r3" value="<b>document_no</b> : string<br><font style="font-size:9px" color="#777777">Nomor berita acara</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORT_FOLLOWUPS">
+          <mxGeometry y="108" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORT_FOLLOWUPS_r4" value="<b>recipient_name</b> : string<br><font style="font-size:9px" color="#777777">Nama penerima barang</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORT_FOLLOWUPS">
+          <mxGeometry y="134" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORT_FOLLOWUPS_r5" value="<b>recipient_org</b> : string<br><font style="font-size:9px" color="#777777">Instansi / lembaga penerima</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORT_FOLLOWUPS">
+          <mxGeometry y="160" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORT_FOLLOWUPS_r6" value="<b>recipient_contact</b> : string<br><font style="font-size:9px" color="#777777">Kontak penerima</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORT_FOLLOWUPS">
+          <mxGeometry y="186" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORT_FOLLOWUPS_r7" value="<b>recipient_id_number</b> : string<br><font style="font-size:9px" color="#777777">NIK / identitas penerima</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORT_FOLLOWUPS">
+          <mxGeometry y="212" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORT_FOLLOWUPS_r8" value="<b>witness_name</b> : string<br><font style="font-size:9px" color="#777777">Saksi 1</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORT_FOLLOWUPS">
+          <mxGeometry y="238" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORT_FOLLOWUPS_r9" value="<b>witness_name_2</b> : string<br><font style="font-size:9px" color="#777777">Saksi 2</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORT_FOLLOWUPS">
+          <mxGeometry y="264" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORT_FOLLOWUPS_r10" value="<b>witness_phone</b> : string<br><font style="font-size:9px" color="#777777">No. HP saksi</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORT_FOLLOWUPS">
+          <mxGeometry y="290" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORT_FOLLOWUPS_r11" value="<b>note</b> : text<br><font style="font-size:9px" color="#777777">Keterangan tindak lanjut</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORT_FOLLOWUPS">
+          <mxGeometry y="316" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORT_FOLLOWUPS_r12" value="<b>photo</b> : string<br><font style="font-size:9px" color="#777777">Foto bukti berita acara</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORT_FOLLOWUPS">
+          <mxGeometry y="342" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORT_FOLLOWUPS_r13" value="<b>created_by</b> : bigint <i style="color:#666666">[FK]</i><br><font style="font-size:9px" color="#777777">FK -&gt; users.id (admin pencatat, wajib)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#fff2cc;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORT_FOLLOWUPS">
+          <mxGeometry y="368" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORT_FOLLOWUPS_r14" value="<b>executed_at</b> : timestamp<br><font style="font-size:9px" color="#777777">Waktu pelaksanaan tindak lanjut</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORT_FOLLOWUPS">
+          <mxGeometry y="394" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORT_FOLLOWUPS_r15" value="<b>created_at</b> : timestamp" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORT_FOLLOWUPS">
+          <mxGeometry y="420" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_REPORT_FOLLOWUPS_r16" value="<b>updated_at</b> : timestamp" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_REPORT_FOLLOWUPS">
+          <mxGeometry y="446" width="320" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_SESSIONS" value="SESSIONS" style="swimlane;html=1;startSize=30;horizontal=1;rounded=0;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=13;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40" y="830" width="300" height="186" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_SESSIONS_r0" value="<b>id</b> : string <i style="color:#666666">[PK]</i><br><font style="font-size:9px" color="#777777">Session ID</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#d5e8d4;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_SESSIONS">
+          <mxGeometry y="30" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_SESSIONS_r1" value="<b>user_id</b> : bigint <i style="color:#666666">[FK]</i><br><font style="font-size:9px" color="#777777">FK -&gt; users.id (nullable, indexed)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#fff2cc;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_SESSIONS">
+          <mxGeometry y="56" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_SESSIONS_r2" value="<b>ip_address</b> : string<br><font style="font-size:9px" color="#777777">IP perangkat (45)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_SESSIONS">
+          <mxGeometry y="82" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_SESSIONS_r3" value="<b>user_agent</b> : text<br><font style="font-size:9px" color="#777777">User agent browser</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_SESSIONS">
+          <mxGeometry y="108" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_SESSIONS_r4" value="<b>payload</b> : longtext<br><font style="font-size:9px" color="#777777">Data sesi terenkripsi</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_SESSIONS">
+          <mxGeometry y="134" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_SESSIONS_r5" value="<b>last_activity</b> : int<br><font style="font-size:9px" color="#777777">Timestamp aktivitas terakhir</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_SESSIONS">
+          <mxGeometry y="160" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_PASSWORD_RESET_TOKENS" value="PASSWORD_RESET_TOKENS" style="swimlane;html=1;startSize=30;horizontal=1;rounded=0;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=13;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1060" width="300" height="108" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_PASSWORD_RESET_TOKENS_r0" value="<b>email</b> : string <i style="color:#666666">[PK]</i><br><font style="font-size:9px" color="#777777">Email pengguna</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#d5e8d4;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_PASSWORD_RESET_TOKENS">
+          <mxGeometry y="30" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_PASSWORD_RESET_TOKENS_r1" value="<b>token</b> : string<br><font style="font-size:9px" color="#777777">Token reset password</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_PASSWORD_RESET_TOKENS">
+          <mxGeometry y="56" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_PASSWORD_RESET_TOKENS_r2" value="<b>created_at</b> : timestamp" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_PASSWORD_RESET_TOKENS">
+          <mxGeometry y="82" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CACHE" value="CACHE" style="swimlane;html=1;startSize=30;horizontal=1;rounded=0;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=13;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="540" width="300" height="108" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CACHE_r0" value="<b>key</b> : string <i style="color:#666666">[PK]</i><br><font style="font-size:9px" color="#777777">Kunci cache</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#d5e8d4;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CACHE">
+          <mxGeometry y="30" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CACHE_r1" value="<b>value</b> : mediumtext<br><font style="font-size:9px" color="#777777">Nilai cache</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CACHE">
+          <mxGeometry y="56" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CACHE_r2" value="<b>expiration</b> : int<br><font style="font-size:9px" color="#777777">Waktu kedaluwarsa (epoch)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CACHE">
+          <mxGeometry y="82" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CACHE_LOCKS" value="CACHE_LOCKS" style="swimlane;html=1;startSize=30;horizontal=1;rounded=0;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=13;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="700" width="300" height="108" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CACHE_LOCKS_r0" value="<b>key</b> : string <i style="color:#666666">[PK]</i><br><font style="font-size:9px" color="#777777">Kunci lock</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#d5e8d4;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CACHE_LOCKS">
+          <mxGeometry y="30" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CACHE_LOCKS_r1" value="<b>owner</b> : string<br><font style="font-size:9px" color="#777777">Pemilik lock</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CACHE_LOCKS">
+          <mxGeometry y="56" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_CACHE_LOCKS_r2" value="<b>expiration</b> : int<br><font style="font-size:9px" color="#777777">Waktu kedaluwarsa (epoch)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_CACHE_LOCKS">
+          <mxGeometry y="82" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_JOBS" value="JOBS" style="swimlane;html=1;startSize=30;horizontal=1;rounded=0;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=13;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="860" width="300" height="212" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_JOBS_r0" value="<b>id</b> : bigint <i style="color:#666666">[PK]</i><br><font style="font-size:9px" color="#777777">PK - queue job</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#d5e8d4;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_JOBS">
+          <mxGeometry y="30" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_JOBS_r1" value="<b>queue</b> : string<br><font style="font-size:9px" color="#777777">Nama antrean</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_JOBS">
+          <mxGeometry y="56" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_JOBS_r2" value="<b>payload</b> : longtext<br><font style="font-size:9px" color="#777777">Data job</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_JOBS">
+          <mxGeometry y="82" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_JOBS_r3" value="<b>attempts</b> : tinyint<br><font style="font-size:9px" color="#777777">Jumlah percobaan</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_JOBS">
+          <mxGeometry y="108" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_JOBS_r4" value="<b>reserved_at</b> : int<br><font style="font-size:9px" color="#777777">Waktu dipesan worker (nullable)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_JOBS">
+          <mxGeometry y="134" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_JOBS_r5" value="<b>available_at</b> : int<br><font style="font-size:9px" color="#777777">Waktu tersedia diproses</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_JOBS">
+          <mxGeometry y="160" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_JOBS_r6" value="<b>created_at</b> : int<br><font style="font-size:9px" color="#777777">Waktu dibuat</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_JOBS">
+          <mxGeometry y="186" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_JOB_BATCHES" value="JOB_BATCHES" style="swimlane;html=1;startSize=30;horizontal=1;rounded=0;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=13;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="1120" width="300" height="290" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_JOB_BATCHES_r0" value="<b>id</b> : string <i style="color:#666666">[PK]</i><br><font style="font-size:9px" color="#777777">ID batch</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#d5e8d4;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_JOB_BATCHES">
+          <mxGeometry y="30" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_JOB_BATCHES_r1" value="<b>name</b> : string<br><font style="font-size:9px" color="#777777">Nama batch</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_JOB_BATCHES">
+          <mxGeometry y="56" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_JOB_BATCHES_r2" value="<b>total_jobs</b> : int<br><font style="font-size:9px" color="#777777">Total job</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_JOB_BATCHES">
+          <mxGeometry y="82" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_JOB_BATCHES_r3" value="<b>pending_jobs</b> : int<br><font style="font-size:9px" color="#777777">Job menunggu</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_JOB_BATCHES">
+          <mxGeometry y="108" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_JOB_BATCHES_r4" value="<b>failed_jobs</b> : int<br><font style="font-size:9px" color="#777777">Job gagal</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_JOB_BATCHES">
+          <mxGeometry y="134" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_JOB_BATCHES_r5" value="<b>failed_job_ids</b> : longtext<br><font style="font-size:9px" color="#777777">ID job yang gagal</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_JOB_BATCHES">
+          <mxGeometry y="160" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_JOB_BATCHES_r6" value="<b>options</b> : mediumtext<br><font style="font-size:9px" color="#777777">Opsi batch (nullable)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_JOB_BATCHES">
+          <mxGeometry y="186" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_JOB_BATCHES_r7" value="<b>cancelled_at</b> : int<br><font style="font-size:9px" color="#777777">Waktu dibatalkan (nullable)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_JOB_BATCHES">
+          <mxGeometry y="212" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_JOB_BATCHES_r8" value="<b>created_at</b> : int<br><font style="font-size:9px" color="#777777">Waktu dibuat</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_JOB_BATCHES">
+          <mxGeometry y="238" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_JOB_BATCHES_r9" value="<b>finished_at</b> : int<br><font style="font-size:9px" color="#777777">Waktu selesai (nullable)</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_JOB_BATCHES">
+          <mxGeometry y="264" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_FAILED_JOBS" value="FAILED_JOBS" style="swimlane;html=1;startSize=30;horizontal=1;rounded=0;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=13;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="1450" width="300" height="212" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_FAILED_JOBS_r0" value="<b>id</b> : bigint <i style="color:#666666">[PK]</i><br><font style="font-size:9px" color="#777777">PK - job gagal</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#d5e8d4;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_FAILED_JOBS">
+          <mxGeometry y="30" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_FAILED_JOBS_r1" value="<b>uuid</b> : string <i style="color:#666666">[UK]</i><br><font style="font-size:9px" color="#777777">UUID unik job</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#e1d5e7;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_FAILED_JOBS">
+          <mxGeometry y="56" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_FAILED_JOBS_r2" value="<b>connection</b> : text<br><font style="font-size:9px" color="#777777">Koneksi antrean</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_FAILED_JOBS">
+          <mxGeometry y="82" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_FAILED_JOBS_r3" value="<b>queue</b> : text<br><font style="font-size:9px" color="#777777">Nama antrean</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_FAILED_JOBS">
+          <mxGeometry y="108" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_FAILED_JOBS_r4" value="<b>payload</b> : longtext<br><font style="font-size:9px" color="#777777">Data job</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_FAILED_JOBS">
+          <mxGeometry y="134" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_FAILED_JOBS_r5" value="<b>exception</b> : longtext<br><font style="font-size:9px" color="#777777">Stack trace error</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_FAILED_JOBS">
+          <mxGeometry y="160" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="tbl_FAILED_JOBS_r6" value="<b>failed_at</b> : timestamp<br><font style="font-size:9px" color="#777777">Waktu gagal</font>" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=10;spacingRight=6;fillColor=#ffffff;strokeColor=#bbbbbb;fontSize=11;whiteSpace=wrap;" vertex="1" parent="tbl_FAILED_JOBS">
+          <mxGeometry y="186" width="300" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_0" value="MEMUAT subunits" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERzeroToOne;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#6c8ebf;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="tbl_REGIONS" target="tbl_REGIONS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_1" value="MENGADMINISTRASI warga di wilayah" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERzeroToOne;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#6c8ebf;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="tbl_REGIONS" target="tbl_USERS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_2" value="MELINDUTI laporan di wilayah" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERzeroToOne;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#6c8ebf;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="tbl_REGIONS" target="tbl_REPORTS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_3" value="MEMBUAT laporan" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#6c8ebf;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="tbl_USERS" target="tbl_REPORTS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_4" value="MENERIMA barang di kantor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERzeroToOne;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#6c8ebf;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="tbl_USERS" target="tbl_REPORTS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_5" value="MELEPAS barang" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERzeroToOne;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#6c8ebf;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="tbl_USERS" target="tbl_REPORTS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_6" value="MENGOREKSI samaran foto" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERzeroToOne;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#6c8ebf;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="tbl_USERS" target="tbl_REPORTS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_7" value="DIKLAIM oleh warga" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#6c8ebf;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="tbl_REPORTS" target="tbl_CLAIMS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_8" value="DIBUKTIKAN oleh laporan hilang" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERzeroToOne;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#6c8ebf;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="tbl_REPORTS" target="tbl_CLAIMS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_9" value="MENGLAJUKAN klaim" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#6c8ebf;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="tbl_USERS" target="tbl_CLAIMS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_10" value="MEMAINKAN hak barang" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#6c8ebf;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="tbl_USERS" target="tbl_CLAIMS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_11" value="MEMUTUSKAN klaim" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERzeroToOne;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#6c8ebf;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="tbl_USERS" target="tbl_CLAIMS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_12" value="MENYERAHKAN barang" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERzeroToOne;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#6c8ebf;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="tbl_USERS" target="tbl_CLAIMS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_13" value="DIJADIKAN pasangan A" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#6c8ebf;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="tbl_REPORTS" target="tbl_MATCH_RESULTS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_14" value="DIJADIKAN pasangan B" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#6c8ebf;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="tbl_REPORTS" target="tbl_MATCH_RESULTS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_15" value="MENERIMA notifikasi" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#6c8ebf;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="tbl_USERS" target="tbl_NOTIFICATIONS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_16" value="MEMBUAT berita acara" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#6c8ebf;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="tbl_REPORTS" target="tbl_REPORT_FOLLOWUPS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_17" value="MENCATAT berita acara" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERone;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#6c8ebf;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="tbl_USERS" target="tbl_REPORT_FOLLOWUPS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_18" value="MEMILIKI sesi aktif" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;startArrow=ERzeroToOne;startFill=0;endArrow=ERzeroToMany;endFill=0;strokeColor=#6c8ebf;fontSize=10;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="tbl_USERS" target="tbl_SESSIONS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,309 @@
+---
+title: Diagram ERD - TemuBarang
+author: Claude Code
+date: 2026-11-23
+version: 1.0
+description: Entity Relationship Diagram lengkap untuk Sistem Informasi Barang Hilang dan Barang Temuan berbasis AI dan Geolokasi di Kecamatan Sambikerep, Surabaya.
+---
+
+%% ============================================
+%% ERD TEMUBARANG
+%% Format: Mermaid erDiagram (industri)
+%%   - Entitas: huruf kapital snake_case
+%%   - Atribut: tipe kolom + nama + constraint (PK/FK/UK) + komentar
+%%   - Relasi: crow's foot (|o = tepat satu, o| = nol/satu, }o = nol/banyak)
+%%   - Label relasi: kata kerja huruf besar (CREATE/READ/UPDATE/DELETE)
+%%
+%% SIKLUS HIDUP LAPORAN (reports.status)
+%%   pending -> verified -> matched -> resolved
+%%   pending -> rejected (dengan alasan wajib)
+%%   verified -> expired (masa klaim 30 hari habis, config('temubarang.claim_window_days'))
+%%   expired  -> resolved (berita acara pelepasan / report_followups)
+%%
+%% CATATAN SCHEMA
+%%   - users.role masih menyimpan nilai enum legacy 'admin' dan 'student'
+%%     di DB, walau aplikasi hanya memakai super_admin / admin_kelurahan / user.
+%%   - reports.pii_reasons, claims.*secret_feature, reports.rejection_reason
+%%     disembunyikan dari serialisasi (atribut $hidden) dan hanya dikirim
+%%     eksplisit ke halaman yang memang berhak.
+%%   - reports.photo (publik) vs reports.photo_original (disk privat).
+%% ============================================
+
+erDiagram
+
+    %% ============================================
+    %% WILAYAH
+    %% ============================================
+
+    REGIONS {
+        bigint id PK "PK - surrogate key"
+        string name "Nama wilayah, mis. Kelurahan Made"
+        enum type "kecamatan | kelurahan | rw"
+        bigint parent_id FK "FK -> regions.id (self reference, onDelete cascade)"
+        decimal latitude "Titik tengah peta (10,7)"
+        decimal longitude "Titik tengah peta (10,7)"
+        decimal bounds_north "Batas atas peta (restriction)"
+        decimal bounds_south "Batas bawah peta (restriction)"
+        decimal bounds_east "Batas timur peta (restriction)"
+        decimal bounds_west "Batas barat peta (restriction)"
+        string kecamatan "Default: Sambikerep"
+        string kota "Default: Surabaya"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    %% ============================================
+    %% PENGGUNA
+    %% ============================================
+
+    USERS {
+        bigint id PK "PK - surrogate key"
+        string name "Nama lengkap warga"
+        string email UK "Email unik, verifikasi hanya Gmail"
+        timestamp email_verified_at "Wajib terisi untuk akses dashboard"
+        string password "Hash bcrypt"
+        string remember_token "Token remember-me"
+        enum role "super_admin | admin_kelurahan | user (default user)"
+        bigint region_id FK "FK -> regions.id (onDelete set null)"
+        string phone "Nomor HP untuk notifikasi"
+        boolean is_verified "Verifikasi manual oleh admin"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    %% ============================================
+    %% LAPORAN BARANG HILANG / TEMUAN
+    %% ============================================
+
+    REPORTS {
+        bigint id PK "PK - surrogate key"
+        bigint user_id FK "FK -> users.id (pelapor, onDelete cascade)"
+        enum type "lost (barang hilang) | found (barang temuan)"
+        string item_name "Nama barang"
+        string category "Kategori barang"
+        text description "Kronologi / ciri umum"
+        text secret_feature "Ciri khusus pembeda - TERKUNCI (tidak dikirim ke publik)"
+        string color "Warna barang"
+        string location "Lokasi kejadian (nama tempat)"
+        string location_detail "Alamat detail"
+        date date "Tanggal kejadian"
+        decimal latitude "Koordinat (10,7)"
+        decimal longitude "Koordinat (10,7)"
+        bigint region_id FK "FK -> regions.id (onDelete set null)"
+        string photo "Foto publik (versi buram bila perlu)"
+        string photo_original "Foto ASLI - disk privat, otorisasi khusus"
+        boolean photo_blurred "Foto publik yang tampil adalah versi buram"
+        boolean photo_sensitive "Kategori sensitif - tidak bisa dibuka samarannya"
+        string serial_number "Nomor seri / IMEI dibaca admin dari fisik (100)"
+        string reported_imei "IMEI yang dilaporkan pelapor (20, indexed)"
+        boolean imei_unreadable "IMEI tidak terbaca dari perangkat"
+        timestamp imei_verified_at "Waktu admin memverifikasi IMEI"
+        boolean pii_detected "Deteksi data pribadi oleh AI"
+        json pii_reasons "Alasan deteksi PII (array JSON)"
+        string pii_status "none | detected | cleared | forced (default none)"
+        timestamp pii_checked_at "Waktu pemeriksaan PII terakhir"
+        string pii_check_error "Pesan error bila pemeriksaan gagal (255)"
+        bigint privacy_override_by FK "FK -> users.id (admin yang koreksi manual)"
+        timestamp privacy_override_at "Waktu koreksi samaran foto"
+        enum status "pending | verified | matched | resolved | rejected | expired"
+        timestamp received_at "Waktu barang diterima di kantor kelurahan"
+        bigint received_by FK "FK -> users.id (admin penerima barang)"
+        text rejection_reason "Alasan penolakan (wajib diisi admin)"
+        timestamp claim_deadline "Batas akhir masa klaim (30 hari)"
+        timestamp expired_at "Waktu became kedaluwarsa"
+        timestamp released_at "Waktu barang benar-benar dilepas"
+        enum resolution_type "claimed | return_to_issuer | hand_to_authority | donated | destroyed"
+        bigint released_by FK "FK -> users.id (admin pelepas barang)"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    %% ============================================
+    %% KLAIM
+    %% ============================================
+
+    CLAIMS {
+        bigint id PK "PK - surrogate key"
+        bigint report_id FK "FK -> reports.id (barang temuan yang diklaim)"
+        bigint lost_report_id FK "FK -> reports.id (laporan HILANG pemilik, nullable)"
+        bigint claimant_id FK "FK -> users.id (pengeclaim, onDelete cascade)"
+        bigint owner_id FK "FK -> users.id (pemilik barang / penemu asli)"
+        enum status "pending | approved | rejected (default pending)"
+        boolean is_redemption "Klaim tebus barang yang sudah kedaluwarsa"
+        timestamp redeemed_at "Waktu penebusan barang kedaluwarsa"
+        text message "Pesan dari pengeclaim"
+        text claimant_proof "Bukti kepemilikan: ciri khusus / foto"
+        string claimant_serial "Nomor seri / IMEI yang diklaim (100)"
+        text admin_note "Catatan keputusan admin"
+        timestamp verified_at "Waktu klaim diputuskan"
+        bigint verified_by FK "FK -> users.id (admin pemutus, nullable)"
+        timestamp handed_over_at "Waktu serah terima barang"
+        bigint handed_over_by FK "FK -> users.id (admin penetrus, nullable)"
+        string receiver_name "Nama penerima barang saat serah terima"
+        string receiver_id_type "Jenis identitas penerima (30)"
+        text handover_note "Catatan serah terima"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    %% ============================================
+    %% HASIL PENCOCOKAN AI (cache)
+    %% ============================================
+
+    MATCH_RESULTS {
+        bigint id PK "PK - surrogate key"
+        bigint report_id_1 FK "FK -> reports.id (laporan A, cascade)"
+        bigint report_id_2 FK "FK -> reports.id (laporan B, cascade)"
+        decimal photo_score "Skor computer vision 0-100 (5,2)"
+        decimal text_score "Skor pencocokan teks 0-100 (5,2)"
+        decimal final_score "Skor gabungan 50% foto + 50% teks (5,2)"
+        string label "Label: sangat cocok / mungkin cocok"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    %% ============================================
+    %% NOTIFIKASI
+    %% ============================================
+
+    NOTIFICATIONS {
+        bigint id PK "PK - surrogate key"
+        bigint user_id FK "FK -> users.id (penerima, onDelete cascade)"
+        string title "Judul notifikasi"
+        text message "Isi notifikasi"
+        string type "success | error | info | match (default info)"
+        string link "URL tujuan, mis. /reports/1"
+        boolean is_read "Sudah dibaca (badge badge in-app)"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    %% ============================================
+    %% BERITA ACARA TINDAK LANJUT / PELEPASAN
+    %% ============================================
+
+    REPORT_FOLLOWUPS {
+        bigint id PK "PK - surrogate key"
+        bigint report_id FK "FK -> reports.id (barang temuan, cascade)"
+        enum action "return_to_issuer | hand_to_authority | donated | destroyed"
+        string document_no "Nomor berita acara"
+        string recipient_name "Nama penerima barang"
+        string recipient_org "Instansi / lembaga penerima"
+        string recipient_contact "Kontak penerima"
+        string recipient_id_number "NIK / identitas penerima"
+        string witness_name "Saksi 1"
+        string witness_name_2 "Saksi 2"
+        string witness_phone "No. HP saksi"
+        text note "Keterangan tindak lanjut"
+        string photo "Foto bukti berita acara"
+        bigint created_by FK "FK -> users.id (admin pencatat, wajib)"
+        timestamp executed_at "Waktu pelaksanaan tindak lanjut"
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    %% ============================================
+    %% TABEL INFRASTRUKTUR (Laravel)
+    %% ============================================
+
+    SESSIONS {
+        string id PK "Session ID"
+        bigint user_id FK "FK -> users.id (nullable, indexed)"
+        string ip_address "IP perangkat (45)"
+        text user_agent "User agent browser"
+        longtext payload "Data sesi terenkripsi"
+        int last_activity "Timestamp aktivitas terakhir"
+    }
+
+    PASSWORD_RESET_TOKENS {
+        string email PK "Email pengguna"
+        string token "Token reset password"
+        timestamp created_at
+    }
+
+    CACHE {
+        string key PK "Kunci cache"
+        mediumtext value "Nilai cache"
+        int expiration "Waktu kedaluwarsa (epoch)"
+    }
+
+    CACHE_LOCKS {
+        string key PK "Kunci lock"
+        string owner "Pemilik lock"
+        int expiration "Waktu kedaluwarsa (epoch)"
+    }
+
+    JOBS {
+        bigint id PK "PK - queue job"
+        string queue "Nama antrean"
+        longtext payload "Data job"
+        tinyint attempts "Jumlah percobaan"
+        int reserved_at "Waktu dipesan worker (nullable)"
+        int available_at "Waktu tersedia diproses"
+        int created_at "Waktu dibuat"
+    }
+
+    JOB_BATCHES {
+        string id PK "ID batch"
+        string name "Nama batch"
+        int total_jobs "Total job"
+        int pending_jobs "Job menunggu"
+        int failed_jobs "Job gagal"
+        longtext failed_job_ids "ID job yang gagal"
+        mediumtext options "Opsi batch (nullable)"
+        int cancelled_at "Waktu dibatalkan (nullable)"
+        int created_at "Waktu dibuat"
+        int finished_at "Waktu selesai (nullable)"
+    }
+
+    FAILED_JOBS {
+        bigint id PK "PK - job gagal"
+        string uuid UK "UUID unik job"
+        text connection "Koneksi antrean"
+        text queue "Nama antrean"
+        longtext payload "Data job"
+        longtext exception "Stack trace error"
+        timestamp failed_at "Waktu gagal"
+    }
+
+    %% ============================================
+    %% RELASI
+    %% ============================================
+    %% Notasi: sisi KIRI = sisi "one" (satu induk/pemilik),
+    %%         sisi KANAN = sisi "many" (banyak anak).
+    %%   ||  = tepat satu      |o = nol atau satu
+    %%   o{  = nol atau banyak
+    %% ============================================
+
+    %% Wilayah
+    REGIONS |o--o{ REGIONS : "MEMUAT subunits"
+    REGIONS |o--o{ USERS : "MENGADMINISTRASI warga di wilayah"
+    REGIONS |o--o{ REPORTS : "MELINDUTI laporan di wilayah"
+
+    %% Pelaporan
+    USERS ||--o{ REPORTS : "MEMBUAT laporan"
+    USERS |o--o{ REPORTS : "MENERIMA barang di kantor"
+    USERS |o--o{ REPORTS : "MELEPAS barang"
+    USERS |o--o{ REPORTS : "MENGOREKSI samaran foto"
+
+    %% Klaim
+    REPORTS ||--o{ CLAIMS : "DIKLAIM oleh warga"
+    REPORTS |o--o{ CLAIMS : "DIBUKTIKAN oleh laporan hilang"
+    USERS ||--o{ CLAIMS : "MENGLAJUKAN klaim"
+    USERS ||--o{ CLAIMS : "MEMAINKAN hak barang"
+    USERS |o--o{ CLAIMS : "MEMUTUSKAN klaim"
+    USERS |o--o{ CLAIMS : "MENYERAHKAN barang"
+
+    %% AI matching
+    REPORTS ||--o{ MATCH_RESULTS : "DIJADIKAN pasangan A"
+    REPORTS ||--o{ MATCH_RESULTS : "DIJADIKAN pasangan B"
+
+    %% Notifikasi
+    USERS ||--o{ NOTIFICATIONS : "MENERIMA notifikasi"
+
+    %% Berita acara
+    REPORTS ||--o{ REPORT_FOLLOWUPS : "MEMBUAT berita acara"
+    USERS ||--o{ REPORT_FOLLOWUPS : "MENCATAT berita acara"
+
+    %% Infrastruktur
+    USERS |o--o{ SESSIONS : "MEMILIKI sesi aktif"

@@ -1,0 +1,165 @@
+---
+title: Diagram Use Case - TemuBarang
+author: Claude Code
+date: 2026-11-23
+version: 1.0
+description: Diagram use case lengkap untuk Sistem Informasi Barang Hilang dan Barang Temuan berbasis AI dan Geolokasi di Kecamatan Sambikerep, Surabaya.
+---
+
+flowchart TD
+    %% ============================================
+    %% ACTOR DEFINITIONS
+    %% ============================================
+
+    SA["👤 Super Admin<br/>(Admin Kecamatan)"]
+    AK["👤 Admin Kelurahan<br/>(Admin Wilayah)"]
+    USR["👤 User (Warga)<br/>(Pelapor & Pemilik)"]
+    AI["🤖 Sistem AI<br/>(Computer Vision & NLP)"]
+
+    %% ============================================
+    %% AUTHENTICATION & USER MANAGEMENT
+    %% ============================================
+
+    subgraph AUTH["Autentikasi & Manajemen Pengguna"]
+        direction TB
+        SA --> UC_SA1["Kelola User<br/>Buat, Edit Role, Hapus"]
+        SA --> UC_SA2["Lihat Semua User"]
+
+        USR --> UC_USR1["Registrasi Akun<br/>Verifikasi Email Gmail"]
+        USR --> UC_USR2["Login"]
+        USR --> UC_USR3["Logout"]
+        USR --> UC_USR4["Lupa Password"]
+        USR --> UC_USR5["Verifikasi Email"]
+        USR --> UC_USR6["Lihat & Edit Profil"]
+    end
+
+    %% ============================================
+    %% REPORT MANAGEMENT
+    %% ============================================
+
+    subgraph REPORT["Pelaporan Barang Hilang & Temuan"]
+        direction TB
+        USR --> UC_USR7["Buat Laporan Barang Hilang"]
+        USR --> UC_USR8["Buat Laporan Barang Temuan"]
+        USR --> UC_USR9["Edit Laporan Sendiri"]
+        USR --> UC_USR10["Hapus Laporan Sendiri"]
+        USR --> UC_USR11["Lihat Detail Laporan"]
+        USR --> UC_USR12["Lihat Foto Asli<br/>(jika berwenang)"]
+
+        AK --> UC_AK1["Verifikasi Laporan<br/>(pending → verified)"]
+        AK --> UC_AK2["Tolak Laporan<br/>(dengan alasan wajib)"]
+        AK --> UC_AK3["Catat Penerimaan<br/>Barang Temuan di Kantor"]
+        AK --> UC_AK4["Samarkan Foto<br/>(manual blur)"]
+        AK --> UC_AK5["Buka Samaran Foto<br/>(unblur non-sensitif)"]
+
+        SA --> UC_SA3["Lihat Semua Laporan<br/>(Seluruh Kecamatan)"]
+        SA --> UC_SA4["Verifikasi Laporan<br/>(Seluruh Wilayah)"]
+    end
+
+    %% ============================================
+    %% AI MATCHING
+    %% ============================================
+
+    subgraph AI_MATCH["Pencocokan Cerdas Berbasis AI"]
+        direction TB
+        AI --> UC_AI1["Pencocokan Otomatis<br/>AI - Computer Vision + Text Matching"]
+        AI --> UC_AI2["Notifikasi Otomatis<br/>(Match Ditemukan)"]
+
+        USR --> UC_USR13["Lihat Hasil Pencocokan<br/>(Matches)"]
+        USR --> UC_USR14["Cari Barang<br/>(Pencarian & Filter)"]
+        USR --> UC_USR15["Lihat Rekomendasi<br/>Pencocokan"]
+    end
+
+    %% ============================================
+    %% CLAIM & HANDOVER
+    %% ============================================
+
+    subgraph CLAIM["Sistem Klaim & Penyerahan"]
+        direction TB
+        USR --> UC_USR16["Klaim Barang Temuan<br/>(Sertakan bukti: ciri khusus / IMEI)"]
+        USR --> UC_USR17["Klaim Tebus<br/>(Barang Kedaluwarsa)"]
+
+        AK --> UC_AK6["Putuskan Klaim<br/>(Approve / Reject)"]
+        AK --> UC_AK7["Catat Serah Terima<br/>(Receiver, Witness, Photo)"]
+        AK --> UC_AK8["Kelola Pelepasan Barang<br/>(Berita Acara Tindak Lanjut)"]
+
+        SA --> UC_SA5["Putuskan Klaim<br/>(Seluruh Wilayah)"]
+    end
+
+    %% ============================================
+    %% AI MODERATION & AUTOMATION
+    %% ============================================
+
+    subgraph AI_AUTO["Sistem Otomatis AI"]
+        direction TB
+        AI --> UC_AI3["Deteksi PII pada Foto<br/>(Auto-blur & Privacy Protection)"]
+        AI --> UC_AI4["Filter Kata Kasar<br/>(Auto-moderasi Konten)"]
+        AI --> UC_AI5["Hitung Masa Klaim<br/>(30 Hari Otomatis)"]
+        AI --> UC_AI6["Notifikasi Otomatis<br/>(Expiry Warning H-5)"]
+    end
+
+    %% ============================================
+    %% NOTIFICATIONS & DASHBOARD
+    %% ============================================
+
+    subgraph NOTIF["Notifikasi & Dashboard"]
+        direction TB
+        USR --> UC_USR18["Lihat Notifikasi<br/>(Badge & In-App)"]
+        USR --> UC_USR19["Tandai Notifikasi Dibaca"]
+        USR --> UC_USR20["Tandai Semua Dibaca"]
+
+        AK --> UC_AK9["Lihat Dashboard Admin<br/>(Filter, Sort, Bulk Action)"]
+        SA --> UC_SA6["Lihat Dashboard Statistik<br/>(Kecamatan)"]
+    end
+
+    %% ============================================
+    %% REGION MANAGEMENT
+    %% ============================================
+
+    subgraph REGION["Manajemen Wilayah"]
+        direction TB
+        SA --> UC_SA7["Kelola Wilayah<br/>(Region: Kecamatan, Kelurahan, RW)"]
+    end
+
+    %% ============================================
+    %% INCLUDE RELATIONSHIPS (dashed)
+    %% ============================================
+
+    UC_AK1 -.-> UC_AK2
+    UC_AK6 -.-> UC_AK6a["Approve Klaim"]
+    UC_AK6 -.-> UC_AK6b["Reject Klaim"]
+    UC_USR7 -.-> UC_AI3
+    UC_USR7 -.-> UC_AI4
+    UC_USR16 -.-> UC_AK6
+
+    %% ============================================
+    %% EXTEND RELATIONSHIPS (dotted)
+    %% ============================================
+
+    UC_AK3 -.-> UC_AI5
+    UC_AK6 -.-> UC_AK7
+    UC_AK6 -.-> UC_AK8
+
+    %% ============================================
+    %% STYLING
+    %% ============================================
+
+    classDef actor fill:#4A90D9,stroke:#2C5F8A,color:#fff,stroke-width:2px
+    classDef superAdmin fill:#F5C542,stroke:#D4A017,color:#000,stroke-width:2px
+    classDef adminKel fill:#7BC67E,stroke:#4A8F4C,color:#fff,stroke-width:2px
+    classDef user fill:#B39DDB,stroke:#7B5EA7,color:#fff,stroke-width:2px
+    classDef systemAI fill:#F48FB1,stroke:#C2185B,color:#fff,stroke-width:2px
+    classDef usecase fill:#FFF3E0,stroke:#E65100,color:#000,stroke-width:1px,stroke-dasharray: 0
+    classDef include fill:#E8F5E9,stroke:#2E7D32,color:#000,stroke-width:1px,stroke-dasharray: 5 5
+    classDef extend fill:#FFF9C4,stroke:#F57F17,color:#000,stroke-width:1px,stroke-dasharray: 2 2
+
+    class SA superAdmin
+    class AK adminKel
+    class USR user
+    class AI systemAI
+    class UC_SA1,UC_SA2,UC_SA3,UC_SA4,UC_SA5,UC_SA6,UC_SA7 usecase
+    class UC_AK1,UC_AK2,UC_AK3,UC_AK4,UC_AK5,UC_AK6,UC_AK7,UC_AK8,UC_AK9 usecase
+    class UC_USR1,UC_USR2,UC_USR3,UC_USR4,UC_USR5,UC_USR6,UC_USR7,UC_USR8,UC_USR9,UC_USR10,UC_USR11,UC_USR12,UC_USR13,UC_USR14,UC_USR15,UC_USR16,UC_USR17,UC_USR18,UC_USR19,UC_USR20 usecase
+    class UC_AI1,UC_AI2,UC_AI3,UC_AI4,UC_AI5,UC_AI6 systemAI
+    class UC_AK6a,UC_AK6b include
+    class UC_AI5,UC_AK7,UC_AK8 extend
